@@ -1,6 +1,6 @@
 {
   "name": "next2d-development-mcp",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "MCP server for Next2D application development assistance",
   "type": "module",
   "bin": {
@@ -25,17 +25,17 @@
   "author": "Next2D",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.12.1"
+    "@modelcontextprotocol/sdk": "^1.26.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@types/node": "^22.15.0",
+    "@types/node": "^25.3.0",
     "@typescript-eslint/eslint-plugin": "^8.56.0",
     "@typescript-eslint/parser": "^8.56.0",
-    "eslint": "^10.0.0",
+    "eslint": "^10.0.1",
     "eslint-plugin-unused-imports": "^4.4.1",
     "globals": "^17.3.0",
-    "typescript": "^5.8.0",
+    "typescript": "^5.9.3",
     "vitest": "^4.0.18"
   },
   "engines": {
