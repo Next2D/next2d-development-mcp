@@ -43,10 +43,6 @@ This MCP server provides the following capabilities to AI agents:
 | **API リファレンス** | Player API, Framework 仕様, 開発テンプレート仕様の提供 |
 | **開発ガイド** | 画面追加手順, コーディング規約, デバッグガイドの提供 |
 
-### 対応プラットフォーム / Supported Platforms
-
-Web / Steam (Windows・macOS・Linux) / iOS / Android
-
 ---
 
 ## 必要な環境 / Requirements
