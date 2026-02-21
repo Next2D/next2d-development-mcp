@@ -3,6 +3,10 @@
   "version": "0.0.2",
   "description": "MCP server for Next2D application development assistance",
   "type": "module",
+  "author": "Toshiyuki Ienaga <ienaga@next2d.app>",
+  "license": "MIT",
+  "homepage": "https://next2d.app",
+  "bugs": "https://github.com/Next2D/next2d-development-mcp/issues",
   "bin": {
     "next2d-development-mcp": "./dist/index.js"
   },
@@ -15,6 +19,10 @@
     "lint": "eslint src/ --ignore-pattern '*.test.ts'",
     "test": "vitest run"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Next2D/next2d-development-mcp.git"
+  },
   "keywords": [
     "next2d",
     "mcp",
@@ -22,8 +30,6 @@
     "development-tools",
     "code-generation"
   ],
-  "author": "Next2D",
-  "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0"
   },
