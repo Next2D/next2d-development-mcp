@@ -66,7 +66,7 @@ Create `.vscode/mcp.json` at the project root:
   "servers": {
     "next2d": {
       "command": "npx",
-      "args": ["next2d-development-mcp"]
+      "args": ["-y", "next2d-development-mcp"]
     }
   }
 }
@@ -97,7 +97,7 @@ Edit the configuration file:
   "mcpServers": {
     "next2d": {
       "command": "npx",
-      "args": ["next2d-development-mcp"]
+      "args": ["-y", "next2d-development-mcp"]
     }
   }
 }
@@ -116,7 +116,7 @@ Create `.mcp.json` at the project root:
   "mcpServers": {
     "next2d": {
       "command": "npx",
-      "args": ["next2d-development-mcp"]
+      "args": ["-y", "next2d-development-mcp"]
     }
   }
 }
@@ -126,7 +126,7 @@ Create `.mcp.json` at the project root:
 Or add directly via CLI:
 
 ```bash
-claude mcp add next2d -- npx next2d-development-mcp
+claude mcp add next2d -- npx -y next2d-development-mcp
 ```
 
 ### OpenAI Codex (ChatGPT CLI)
@@ -139,11 +139,15 @@ Create `.codex/mcp.json` at the project root:
   "mcpServers": {
     "next2d": {
       "command": "npx",
-      "args": ["next2d-development-mcp"]
+      "args": ["-y", "next2d-development-mcp"]
     }
   }
 }
 ```
+
+> `npm` キャッシュ権限エラー (`EPERM`, `~/.npm/_npx`) が出る場合はキャッシュ先を明示してください。  
+> If npm cache permission errors occur, set a writable cache path:
+> `"args": ["-y", "--cache", "/tmp/next2d-mcp-npm-cache", "next2d-development-mcp"]`
 
 ### Gemini CLI
 
@@ -155,7 +159,7 @@ Create `.gemini/settings.json` at the project root:
   "mcpServers": {
     "next2d": {
       "command": "npx",
-      "args": ["next2d-development-mcp"]
+      "args": ["-y", "next2d-development-mcp"]
     }
   }
 }
@@ -176,7 +180,7 @@ Add the MCP server from Cline settings:
   "mcpServers": {
     "next2d": {
       "command": "npx",
-      "args": ["next2d-development-mcp"]
+      "args": ["-y", "next2d-development-mcp"]
     }
   }
 }
@@ -195,7 +199,7 @@ Add to Cursor settings:
   "mcpServers": {
     "next2d": {
       "command": "npx",
-      "args": ["next2d-development-mcp"]
+      "args": ["-y", "next2d-development-mcp"]
     }
   }
 }
@@ -213,7 +217,7 @@ Add to Windsurf MCP configuration:
   "mcpServers": {
     "next2d": {
       "command": "npx",
-      "args": ["next2d-development-mcp"]
+      "args": ["-y", "next2d-development-mcp"]
     }
   }
 }
@@ -227,7 +231,7 @@ MCP uses the standard **stdio** transport protocol. Configure the following comm
 
 ```
 command: npx
-args: next2d-development-mcp
+args: -y next2d-development-mcp
 ```
 
 ---
