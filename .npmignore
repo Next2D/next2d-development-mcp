@@ -1,8 +1,12 @@
 .github
 node_modules
 src
+next2d-development-assistant
 .gitattributes
 .gitignore
+.gitmodules
+.vscodeignore
 eslint.config.mjs
 tsconfig.json
 vitest.config.ts
+SECURITY.md
