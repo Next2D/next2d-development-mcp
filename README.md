@@ -1,7 +1,7 @@
 # next2d-development-mcp
 
 <div align="center">
-  <img src="https://next2d.app/assets/img/logo.svg" width="180" alt="Next2D">
+  <img src="https://next2d.app/assets/img/top-logo.svg" width="180" alt="Next2D">
 </div>
 
 [![UnitTest](https://github.com/Next2D/next2d-development-mcp/actions/workflows/integration.yml/badge.svg?branch=main)](https://github.com/Next2D/next2d-development-mcp/actions/workflows/integration.yml)
