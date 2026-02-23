@@ -9,11 +9,51 @@ const __dirname = path.dirname(__filename);
 function loadReference(filename: string): string {
     // Search locations (in priority order):
     // 1. Bundled with package: dist/references/ (works after npm publish)
-    // 2. Development: .github/skills/references/ (relative to project root)
-    // 3. User's project: cwd/.github/skills/references/ (if user has specs locally)
+    // 2. Development submodule: next2d-development-assistant/skills/next2d-development-assistant/references/
+    // 3. Development submodule (legacy layout): next2d-development-assistant/.github/skills/references/
+    // 4. Development (legacy): .github/skills/references/ (relative to project root)
+    // 5. User's project submodule: cwd/next2d-development-assistant/skills/next2d-development-assistant/references/
+    // 6. User's project submodule (legacy layout): cwd/next2d-development-assistant/.github/skills/references/
+    // 7. User's project (legacy): cwd/.github/skills/references/
     const candidates = [
         path.join(__dirname, "..", "references", filename),
+        path.join(
+            __dirname,
+            "..",
+            "..",
+            "next2d-development-assistant",
+            "skills",
+            "next2d-development-assistant",
+            "references",
+            filename
+        ),
+        path.join(
+            __dirname,
+            "..",
+            "..",
+            "next2d-development-assistant",
+            ".github",
+            "skills",
+            "references",
+            filename
+        ),
         path.join(__dirname, "..", "..", ".github", "skills", "references", filename),
+        path.join(
+            process.cwd(),
+            "next2d-development-assistant",
+            "skills",
+            "next2d-development-assistant",
+            "references",
+            filename
+        ),
+        path.join(
+            process.cwd(),
+            "next2d-development-assistant",
+            ".github",
+            "skills",
+            "references",
+            filename
+        ),
         path.join(process.cwd(), ".github", "skills", "references", filename)
     ];
 
