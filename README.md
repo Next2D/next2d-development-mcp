@@ -4,6 +4,12 @@
   <img src="https://next2d.app/assets/img/logo.svg" width="180" alt="Next2D">
 </div>
 
+[![UnitTest](https://github.com/Next2D/next2d-development-mcp/actions/workflows/integration.yml/badge.svg?branch=main)](https://github.com/Next2D/next2d-development-mcp/actions/workflows/integration.yml)
+[![CodeQL](https://github.com/Next2D/next2d-development-mcp/actions/workflows/github-code-scanning/codeql/badge.svg?branch=main)](https://github.com/Next2D/next2d-development-mcp/actions/workflows/github-code-scanning/codeql)
+[![Lint](https://github.com/Next2D/next2d-development-mcp/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/Next2D/next2d-development-mcp/actions/workflows/lint.yml)
+
+[![release](https://img.shields.io/github/v/release/Next2D/next2d-development-mcp)](https://github.com/Next2D/next2d-development-mcp/releases)
+
 [Next2D](https://next2d.app) アプリケーション開発を支援する **MCP (Model Context Protocol) サーバー**です。  
 [framework-typescript-template](https://github.com/Next2D/framework-typescript-template) を使った **MVVM + Clean Architecture + Atomic Design** パターンに従ったコード生成、アーキテクチャ検証、API リファレンスを提供します。
 
