@@ -1,0 +1,3 @@
+[submodule "next2d-development-assistant"]
+	path = next2d-development-assistant
+	url = git@github.com:Next2D/next2d-development-assistant.git

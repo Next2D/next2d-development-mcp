@@ -1,6 +1,6 @@
 {
   "name": "next2d-development-mcp",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "MCP server for Next2D application development assistance",
   "type": "module",
   "author": "Toshiyuki Ienaga <ienaga@next2d.app>",
@@ -13,7 +13,7 @@
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc && npm run copy-refs",
-    "copy-refs": "node -e \"const fs=require('fs');const p=require('path');const src=p.join('.github','skills','references');const dst=p.join('dist','references');fs.mkdirSync(dst,{recursive:true});fs.readdirSync(src).filter(f=>f.endsWith('.md')).forEach(f=>fs.copyFileSync(p.join(src,f),p.join(dst,f)));console.log('Copied references to dist/references/')\"",
+    "copy-refs": "node -e \"const fs=require('fs');const p=require('path');const roots=[p.join('next2d-development-assistant','skills','next2d-development-assistant','references'),p.join('next2d-development-assistant','.github','skills','references'),p.join('.github','skills','references')];const src=roots.find((dir)=>fs.existsSync(dir));if(!src){throw new Error('Reference directory not found. Expected next2d-development-assistant/skills/next2d-development-assistant/references');}const dst=p.join('dist','references');fs.mkdirSync(dst,{recursive:true});fs.readdirSync(src).filter((f)=>f.endsWith('.md')).forEach((f)=>fs.copyFileSync(p.join(src,f),p.join(dst,f)));console.log('Copied references from '+src+' to dist/references/');\"",
     "start": "node dist/index.js",
     "dev": "tsc --watch",
     "lint": "eslint src/ --ignore-pattern '*.test.ts'",
