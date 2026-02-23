@@ -1,7 +1,7 @@
 # next2d-development-mcp
 
 <div align="center">
-  <img src="https://next2d.app/assets/img/top-logo.svg" width="180" alt="Next2D">
+  <img src="https://github.com/Next2D/next2d-development-mcp/raw/main/icon.png" width="180" alt="Next2D">
 </div>
 
 [![UnitTest](https://github.com/Next2D/next2d-development-mcp/actions/workflows/integration.yml/badge.svg?branch=main)](https://github.com/Next2D/next2d-development-mcp/actions/workflows/integration.yml)
@@ -61,6 +61,18 @@ This MCP server provides the following capabilities to AI agents:
 ---
 
 ## AI エージェントへの追加方法 / AI Agent Setup
+
+### VS Code Marketplace（推奨 / Recommended）
+
+VS Code Marketplace からワンクリックでインストールできます。
+Install with one click from the VS Code Marketplace:
+
+**[![Install in VS Code](https://img.shields.io/badge/Install%20in-VS%20Code-007ACC?logo=visual-studio-code)](https://marketplace.visualstudio.com/items?itemName=next2d.next2d-development-mcp)**
+
+インストール後、GitHub Copilot Chat で `@next2d` を入力すると MCP ツールが利用可能になります。
+After installation, MCP tools are available by typing `@next2d` in GitHub Copilot Chat.
+
+---
 
 ### GitHub Copilot (VS Code / VS Code Insiders)
 
@@ -342,8 +354,6 @@ ViewModel.constructor
 - [Create Next2D App](https://github.com/Next2D/create-next2d-app) — プロジェクト生成ツール
 - [Next2D Animation Tool](https://tool.next2d.app/) — アニメーション作成ツール
 - [MCP Specification](https://modelcontextprotocol.io/) — Model Context Protocol 仕様
-
----
 
 ## License
 

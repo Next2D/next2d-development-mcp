@@ -1,0 +1,16 @@
+.git/**
+.github/**
+.gitmodules
+.gitattributes
+.gitignore
+.npmignore
+node_modules/**
+src/**
+next2d-development-assistant/**
+!node_modules/next2d-development-mcp/**
+**/*.test.ts
+**/*.map
+eslint.config.mjs
+tsconfig.json
+vitest.config.ts
+SECURITY.md
