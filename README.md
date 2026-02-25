@@ -113,7 +113,7 @@ Edit the configuration file:
 ```json
 {
   "mcpServers": {
-    "next2d": {
+    "next2d-development-mcp": {
       "command": "npx",
       "args": ["-y", "next2d-development-mcp"]
     }
@@ -132,7 +132,7 @@ Create `.mcp.json` at the project root:
 ```json
 {
   "mcpServers": {
-    "next2d": {
+    "next2d-development-mcp": {
       "command": "npx",
       "args": ["-y", "next2d-development-mcp"]
     }
@@ -155,7 +155,7 @@ Create `.codex/mcp.json` at the project root:
 ```json
 {
   "mcpServers": {
-    "next2d": {
+    "next2d-development-mcp": {
       "command": "npx",
       "args": ["-y", "next2d-development-mcp"]
     }
@@ -175,7 +175,7 @@ Create `.gemini/settings.json` at the project root:
 ```json
 {
   "mcpServers": {
-    "next2d": {
+    "next2d-development-mcp": {
       "command": "npx",
       "args": ["-y", "next2d-development-mcp"]
     }
@@ -196,7 +196,7 @@ Add the MCP server from Cline settings:
 ```json
 {
   "mcpServers": {
-    "next2d": {
+    "next2d-development-mcp": {
       "command": "npx",
       "args": ["-y", "next2d-development-mcp"]
     }
@@ -215,7 +215,7 @@ Add to Cursor settings:
 ```json
 {
   "mcpServers": {
-    "next2d": {
+    "next2d-development-mcp": {
       "command": "npx",
       "args": ["-y", "next2d-development-mcp"]
     }
@@ -233,7 +233,7 @@ Add to Windsurf MCP configuration:
 ```json
 {
   "mcpServers": {
-    "next2d": {
+    "next2d-development-mcp": {
       "command": "npx",
       "args": ["-y", "next2d-development-mcp"]
     }
