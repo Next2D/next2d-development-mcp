@@ -1,0 +1,25 @@
+name: Publish Extension Package
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: 'git config --global url."https://github.com/".insteadOf git@github.com:'
+      - run: git submodule sync --recursive
+      - run: git submodule update --init --recursive
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: "https://registry.npmjs.org"
+      - run: npm install -g npm@latest
+      - run: npm install
+      - run: npm run build
+      - run: npx @vscode/vsce publish
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
