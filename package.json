@@ -1,7 +1,7 @@
 {
   "name": "next2d-development-mcp",
   "displayName": "Next2D Development MCP",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "MCP server for Next2D application development assistance",
   "type": "module",
   "author": "Toshiyuki Ienaga <ienaga@next2d.app>",
