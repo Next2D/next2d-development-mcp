@@ -4,8 +4,8 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 
 function walkDir(dir: string, suffix: string, results: string[] = []): string[] {
-    if (!fs.existsSync(dir)) { return results; }
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (!fs.existsSync(dir)) { return results }
+    for (const entry of fs.readdirSync(dir, { "withFileTypes": true })) {
         const full = path.join(dir, entry.name);
         if (entry.isDirectory()) {
             walkDir(full, suffix, results);
@@ -85,8 +85,8 @@ export function registerAnalyzeProject(server: McpServer): void {
                         ].filter(Boolean).join(" ");
 
                         const missing: string[] = [];
-                        if (!hasView) { missing.push("View"); }
-                        if (!hasVM) { missing.push("ViewModel"); }
+                        if (!hasView) { missing.push("View") }
+                        if (!hasVM) { missing.push("ViewModel") }
 
                         const icon = missing.length === 0 ? "✅" : "⚠️";
                         const missingNote = missing.length > 0 ? ` ← missing: ${missing.join(", ")}` : "";
@@ -136,7 +136,7 @@ export function registerAnalyzeProject(server: McpServer): void {
             const pageFiles = walkDir(path.join(base, "src/ui/component/page"), ".ts");
             const contentFiles = walkDir(path.join(base, "src/ui/content"), ".ts");
 
-            lines.push(`### UI Components`);
+            lines.push("### UI Components");
             lines.push(`- Atoms: ${atomFiles.length}`);
             lines.push(`- Molecules: ${moleculeFiles.length}`);
             lines.push(`- Pages: ${pageFiles.length}`);

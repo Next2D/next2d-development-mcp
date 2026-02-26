@@ -72,8 +72,8 @@ export function registerPlanFeature(server: McpServer): void {
             const lines: string[] = [
                 `## Implementation Plan: \`${screenPath}\``,
                 "",
-                `| Item | Value |`,
-                `|------|-------|`,
+                "| Item | Value |",
+                "|------|-------|",
                 `| Screen path | \`${screenPath}\` |`,
                 `| Class prefix | \`${pascal}\` |`,
                 `| View directory | \`src/view/${screenDir}/\` |`,
@@ -92,17 +92,17 @@ export function registerPlanFeature(server: McpServer): void {
                 lines.push(`### Step ${step}: Add Route`);
                 lines.push("**Tool:** `add_route`");
                 lines.push("```json");
-                lines.push(`{`);
+                lines.push("{");
                 lines.push(`  "path": "${screenPath}",`);
-                lines.push(`  "requests": [`);
+                lines.push("  \"requests\": [");
                 if (hasContent) {
                     lines.push(`    { "type": "content", "path": "{{ content.endPoint }}content/${screenPath}.json", "name": "${pascal}Content", "cache": true }${hasApi ? "," : ""}`);
                 }
                 if (hasApi) {
                     lines.push(`    { "type": "json", "path": "{{ api.endPoint }}api/${screenPath}.json", "name": "${pascal}Data" }`);
                 }
-                lines.push(`  ]`);
-                lines.push(`}`);
+                lines.push("  ]");
+                lines.push("}");
                 lines.push("```");
                 step++;
             }
@@ -113,10 +113,10 @@ export function registerPlanFeature(server: McpServer): void {
                 lines.push(`### Step ${step}: Define API Response Interface`);
                 lines.push("**Tool:** `create_interface`");
                 lines.push("```");
-                lines.push(`create_interface({`);
+                lines.push("create_interface({");
                 lines.push(`  name: "${pascal}Response",`);
-                lines.push(`  properties: [{ name: "id", type: "string" }, { name: "name", type: "string" }]`);
-                lines.push(`})`);
+                lines.push("  properties: [{ name: \"id\", type: \"string\" }, { name: \"name\", type: \"string\" }]");
+                lines.push("})");
                 lines.push("```");
                 lines.push(`**Output:** \`src/interface/I${pascal}Response.ts\``);
                 lines.push("**Note:** Define only the properties you actually use (minimal interface rule)");
@@ -174,7 +174,7 @@ export function registerPlanFeature(server: McpServer): void {
                 lines.push("```");
                 lines.push(`create_view({ name: "${screenPath}" })`);
                 lines.push("```");
-                lines.push(`**Output:**`);
+                lines.push("**Output:**");
                 lines.push(`- \`src/view/${screenDir}/${pascal}View.ts\``);
                 lines.push(`- \`src/view/${screenDir}/${pascal}ViewModel.ts\``);
                 lines.push("**After creation:**");
@@ -246,25 +246,25 @@ export function registerPlanFeature(server: McpServer): void {
             lines.push(`export class ${pascal}View extends View<${pascal}ViewModel> {`);
             lines.push(`    private readonly _${screenDir}Page: ${pascal}Page;`);
             lines.push(`    constructor(vm: ${pascal}ViewModel) {`);
-            lines.push(`        super(vm);`);
+            lines.push("        super(vm);");
             lines.push(`        this._${screenDir}Page = new ${pascal}Page();`);
             lines.push(`        this.addChild(this._${screenDir}Page);`);
-            lines.push(`    }`);
+            lines.push("    }");
             lines.push(`    async initialize(): Promise<void> { this._${screenDir}Page.initialize(this.vm); }`);
             lines.push(`    async onEnter(): Promise<void> { await this._${screenDir}Page.onEnter(); }`);
-            lines.push(`    async onExit(): Promise<void> { return void 0; }`);
-            lines.push(`}`);
+            lines.push("    async onExit(): Promise<void> { return void 0; }");
+            lines.push("}");
             lines.push("```");
             lines.push("");
             lines.push("### ViewModel Pattern");
             if (hasApi) {
                 lines.push("```typescript");
-                lines.push(`async initialize(): Promise<void> {`);
-                lines.push(`    const response = app.getResponse();`);
+                lines.push("async initialize(): Promise<void> {");
+                lines.push("    const response = app.getResponse();");
                 lines.push(`    if (response.has("${pascal}Data")) {`);
                 lines.push(`        this.data = response.get("${pascal}Data") as I${pascal}Response;`);
-                lines.push(`    }`);
-                lines.push(`}`);
+                lines.push("    }");
+                lines.push("}");
                 lines.push("```");
             }
             lines.push("");

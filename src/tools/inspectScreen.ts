@@ -11,8 +11,8 @@ function toPascal(name: string): string {
 }
 
 function walkDir(dir: string, suffix: string, results: string[] = []): string[] {
-    if (!fs.existsSync(dir)) { return results; }
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (!fs.existsSync(dir)) { return results }
+    for (const entry of fs.readdirSync(dir, { "withFileTypes": true })) {
         const full = path.join(dir, entry.name);
         if (entry.isDirectory()) {
             walkDir(full, suffix, results);
@@ -65,8 +65,8 @@ export function registerInspectScreen(server: McpServer): void {
             const lines: string[] = [
                 `## Screen Inspection: \`${screenPath}\``,
                 "",
-                `| Item | Value |`,
-                `|------|-------|`,
+                "| Item | Value |",
+                "|------|-------|",
                 `| Screen path | \`${screenPath}\` |`,
                 `| Class prefix | \`${pascal}\` |`,
                 `| Screen directory | \`src/view/${screenDir}/\` |`,
@@ -100,8 +100,8 @@ export function registerInspectScreen(server: McpServer): void {
             // --- Core MVVM files ---
             lines.push("### MVVM Files");
             const coreFiles = [
-                { label: "View", rel: `src/view/${screenDir}/${pascal}View.ts` },
-                { label: "ViewModel", rel: `src/view/${screenDir}/${pascal}ViewModel.ts` }
+                { "label": "View", "rel": `src/view/${screenDir}/${pascal}View.ts` },
+                { "label": "ViewModel", "rel": `src/view/${screenDir}/${pascal}ViewModel.ts` }
             ];
             for (const f of coreFiles) {
                 const s = fileStatus(base, f.rel);
@@ -207,8 +207,8 @@ export function registerInspectScreen(server: McpServer): void {
             if (!coreFiles[1] || !fileStatus(base, coreFiles[1].rel).exists) {
                 missing.push("ViewModel");
             }
-            if (!pageStat.exists) { missing.push("Page"); }
-            if (usecaseFiles.length === 0) { missing.push("UseCase"); }
+            if (!pageStat.exists) { missing.push("Page") }
+            if (usecaseFiles.length === 0) { missing.push("UseCase") }
 
             lines.push("### Summary");
             if (missing.length === 0) {
