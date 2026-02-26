@@ -1,9 +1,5 @@
 # next2d-development-mcp
 
-<div align="center">
-  <img src="https://github.com/Next2D/next2d-development-mcp/raw/main/icon.png" width="64" alt="Next2D">
-</div>
-
 [![UnitTest](https://github.com/Next2D/next2d-development-mcp/actions/workflows/integration.yml/badge.svg?branch=main)](https://github.com/Next2D/next2d-development-mcp/actions/workflows/integration.yml)
 [![CodeQL](https://github.com/Next2D/next2d-development-mcp/actions/workflows/github-code-scanning/codeql/badge.svg?branch=main)](https://github.com/Next2D/next2d-development-mcp/actions/workflows/github-code-scanning/codeql)
 [![Lint](https://github.com/Next2D/next2d-development-mcp/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/Next2D/next2d-development-mcp/actions/workflows/lint.yml)
