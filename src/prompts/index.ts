@@ -119,6 +119,38 @@ export function registerPrompts(server: McpServer): void {
     );
 
     server.registerPrompt(
+        "orchestrate",
+        {
+            "description":
+                "Activate orchestrator mode for systematic Next2D development. " +
+                "Handles both NEW screen creation and EXISTING screen modification. " +
+                "Claude will inspect the screen state, plan changes, execute MCP tools, and validate.",
+            "argsSchema": {
+                "task": z.string().describe(
+                    "What you want to build or change (e.g. 'add search to quest/list', 'implement home screen')"
+                ),
+                "screenPath": z.string().describe(
+                    "Target screen path matching routing.json key (e.g. 'quest/list', 'home')"
+                ),
+                "mode": z.enum(["create", "modify"]).optional().default("create").describe(
+                    "'create' for a new screen, 'modify' to change an existing screen"
+                )
+            }
+        },
+        async ({ task, screenPath, mode }) => ({
+            "messages": [
+                {
+                    "role": "user",
+                    "content": {
+                        "type": "text",
+                        "text": ORCHESTRATE_GUIDE(task, screenPath, mode ?? "create")
+                    }
+                }
+            ]
+        })
+    );
+
+    server.registerPrompt(
         "debug-help",
         {
             "description": "Common Next2D debugging tips and troubleshooting guide",
@@ -177,6 +209,120 @@ export function registerPrompts(server: McpServer): void {
     );
 }
 
+function ORCHESTRATE_GUIDE(task: string, screenPath: string, mode: "create" | "modify"): string {
+    const isModify = mode === "modify";
+
+    const createWorkflow = `
+## Phase 1: Analyze Current State
+Call **\`analyze_project\`** to understand the overall project state.
+
+## Phase 2: Generate Implementation Plan
+Call **\`plan_feature\`** with:
+- \`screenPath\`: \`"${screenPath}"\`
+- \`hasApi\`: \`true\` if API data is needed
+- \`hasContent\`: \`true\` if Animation Tool (.n2d) assets are needed
+
+The tool returns an ordered step list. Steps marked ✅ are already implemented — skip them.
+
+## Phase 3: Execute the Plan
+For each step in the plan:
+1. Call the specified MCP tool to generate the code
+2. Write the file to the exact path shown
+3. Implement business logic as described in the step notes
+4. Run \`npm run generate\` after updating routing.json
+
+## Phase 4: Validate
+Call **\`validate_architecture\`** to confirm all files exist and the structure is consistent.
+
+**Start now:** call \`analyze_project\`.
+`;
+
+    const modifyWorkflow = `
+## Phase 1: Inspect the Target Screen
+Call **\`inspect_screen\`** with \`screenPath: "${screenPath}"\`.
+
+This returns:
+- routing.json configuration for this screen
+- All related file paths (View, ViewModel, Page, UseCases, Repositories, Animations, Content)
+- File line counts so you know how much is already implemented
+- Missing files flagged with ❌
+
+## Phase 2: Read the Relevant Files
+Using the **Read** tool, read the files that are related to the change:
+- If changing UI → read the Page component
+- If changing data flow → read ViewModel + UseCase
+- If changing API → read Repository + Interface
+- If changing navigation → read UseCase that calls \`app.gotoView()\`
+
+**Read only what you need** — targeted modification, not full rewrites.
+
+## Phase 3: Plan and Execute Changes
+Based on what you read, decide the minimal set of changes:
+
+| Need to... | Action |
+|---|---|
+| Add a new action | Create UseCase with \`create_usecase\` tool |
+| Add API access | Create Repository with \`create_repository\` tool |
+| Add a UI element | Create component with \`create_ui_component\` tool |
+| Add animation | Create animation with \`create_animation\` tool |
+| Modify existing logic | Edit the specific file directly |
+
+**Modification rules:**
+- Change **only** what the task requires — no unrelated refactoring
+- Keep single responsibility: one UseCase per action
+- If modifying ViewModel, make sure View still delegates (no logic added to View)
+- Buttons added/modified must use \`ButtonAtom.disable()\`/\`enable()\`
+
+## Phase 4: Validate
+Call **\`validate_architecture\`** to confirm the screen structure remains consistent.
+
+**Start now:** call \`inspect_screen\` with \`screenPath: "${screenPath}"\`.
+`;
+
+    return `# Next2D Development Orchestrator
+
+## Task
+${task}
+
+| Item | Value |
+|------|-------|
+| Target screen | \`${screenPath}\` |
+| Mode | **${isModify ? "Modify existing screen" : "Create new screen"}** |
+
+## Your Role
+You are a systematic development orchestrator for Next2D projects.
+Follow the workflow below **in order**. Do not skip phases.
+${isModify ? modifyWorkflow : createWorkflow}
+---
+
+## Architecture Rules (always apply)
+- **View** → extends \`View<ViewModel>\`, delegates to Page: \`page.initialize(this.vm)\`
+- **ViewModel** → holds UseCases, no direct UI, fetches data in \`initialize()\`
+- **UseCase** → one action = one class, single \`execute()\` entry point
+- **Repository** → try-catch required, endpoint from \`config.api.endPoint\`, no \`any\` type
+- **Buttons** → \`ButtonAtom.disable()\` on press, \`enable()\` after action or in \`Job.COMPLETE\`
+- **Interfaces** → \`I\` prefix, minimal properties only
+
+---
+
+## Tool Reference
+
+| Tool | When to use |
+|------|-------------|
+| \`inspect_screen\` | Before modifying — understand what exists |
+| \`analyze_project\` | Before creating — see overall project state |
+| \`plan_feature\` | Generate ordered creation steps |
+| \`create_usecase\` | Add a new action/behavior |
+| \`create_repository\` | Add new API/data access |
+| \`create_interface\` | Define a new response/DTO type |
+| \`create_ui_component\` | Add Page/Molecule/Atom/Content |
+| \`create_animation\` | Add Tween animation |
+| \`create_view\` | Generate View + ViewModel pair |
+| \`add_route\` | Register new route in routing.json |
+| \`validate_architecture\` | Final consistency check |
+`;
+}
+
 const ARCHITECTURE_GUIDE = `# Next2D Architecture & Coding Conventions
 
 ## MVVM + Clean Architecture
@@ -206,11 +352,11 @@ const ARCHITECTURE_GUIDE = `# Next2D Architecture & Coding Conventions
 - All public methods must have JSDoc comments
 
 ### View Rules
-- Extends \`Sprite\` (via framework \`View\` class)
+- Extends \`View<ViewModel>\` generic class from framework
 - **No business logic** - only display structure
-- Constructor receives ViewModel and creates Page component with \`addChild()\`
-- \`initialize()\`: Delegates to Page for UI setup and event binding
-- \`onEnter()\`: Delegates to Page for entry animations
+- Constructor receives ViewModel, calls \`super(vm)\`, creates Page component and \`addChild()\`
+- \`initialize()\`: Delegates to \`this._xxxPage.initialize(this.vm)\`
+- \`onEnter()\`: Delegates to \`await this._xxxPage.onEnter()\`
 - \`onExit()\`: Cleanup when view is hidden
 
 ### ViewModel Rules
@@ -259,20 +405,48 @@ content.addEventListener(PointerEvent.POINTER_DOWN, (event: PointerEvent): void 
 \`\`\`typescript
 // ButtonAtom provides disable()/enable() for mouseEnabled/mouseChildren control
 
-// In Page.initialize(vm):
+// Pattern 1: Normal button (re-enable on POINTER_UP)
 button.addEventListener(PointerEvent.POINTER_UP, async (): Promise<void> => {
     button.disable();  // Immediately disable to prevent double-press
     await vm.onClickButton();
     button.enable();   // Re-enable after processing (skip if navigating away)
 });
 
-// In ViewModel (for async operations):
-async onClickButton (): Promise<void> {
-    try {
-        await this.fetchDataUseCase.execute();
-    } catch (error) {
-        console.error(error);
-    }
-}
+// Pattern 2: Tween animation (re-enable in Job.COMPLETE callback)
+button.addEventListener(PointerEvent.POINTER_UP, (): void => {
+    button.disable();
+    new ButtonPointerUpAnimation(button, () => { button.enable(); }).start();
+});
+\`\`\`
+
+### Display Object Hierarchy
+\`\`\`
+DisplayObject (base)
+├── InteractiveObject
+│   ├── DisplayObjectContainer
+│   │   └── Sprite
+│   │       └── MovieClip    ← addChild() allowed, timeline animation
+│   └── TextField            ← addChild() NOT allowed, text display/input
+├── Shape                    ← addChild() NOT allowed, lightweight vector drawing
+└── Video                    ← addChild() NOT allowed, video playback
+\`\`\`
+**Key type constraints:**
+- \`Shape\` does NOT extend \`DisplayObjectContainer\` → \`addChild()\` unavailable
+- \`Shape\` cannot be directly cast to \`Sprite\` → use \`as unknown as Sprite\` two-step assertion
+- \`hitArea\` property type is \`Sprite | null\` → type assertion required when passing \`Shape\`
+
+### Content Security Policy (CSP)
+Required directives for Next2D Player (WebGL/WebGPU, Web Workers, Blob URLs):
+\`\`\`
+default-src 'self' data: blob:    ← Blob URL/Data URI used internally
+style-src 'self' 'unsafe-inline'  ← Dynamic style injection by Player
+worker-src 'self' blob: data:     ← Web Worker via Blob/Data URI
+\`\`\`
+**NEVER add \`frame-ancestors 'none'\`** — it will break the application.
+
+### E2E Testing Recommendation
+After screen transitions or UI behavior changes, verify with Playwright:
+\`\`\`bash
+npx playwright test
 \`\`\`
 `;

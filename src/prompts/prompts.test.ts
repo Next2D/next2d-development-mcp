@@ -9,10 +9,10 @@ describe("Prompt registration", () => {
         server = new McpServer({ name: "test", version: "0.0.1" });
     });
 
-    it("registers 3 prompts without error", () => {
+    it("registers 4 prompts without error", () => {
         const spy = vi.spyOn(server, "registerPrompt");
         registerPrompts(server);
-        expect(spy).toHaveBeenCalledTimes(3);
+        expect(spy).toHaveBeenCalledTimes(4);
     });
 
     it("registers expected prompt names", () => {
@@ -22,5 +22,6 @@ describe("Prompt registration", () => {
         expect(names).toContain("new-screen");
         expect(names).toContain("architecture-guide");
         expect(names).toContain("debug-help");
+        expect(names).toContain("orchestrate");
     });
 });

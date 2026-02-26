@@ -3,12 +3,12 @@ name: Integration UnitTest
 on:
   push:
     branches:
-      - main
       - develop
   pull_request:
     branches:
       - main
       - develop
+  workflow_call:
 
 jobs:
   macos-browser-test:
@@ -28,6 +28,7 @@ jobs:
       - run: npm install -g npm@latest
       - run: npm install
       - run: npm run test
+        
 
   windows-browser-test:
     runs-on: windows-latest
@@ -46,3 +47,4 @@ jobs:
       - run: npm install -g npm@latest
       - run: npm install
       - run: npm run test
+      - run: npm audit --audit-level=high

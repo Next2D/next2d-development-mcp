@@ -8,6 +8,9 @@ import { registerAddRoute } from "./addRoute.js";
 import { registerCreateInterface } from "./createInterface.js";
 import { registerCreateAnimation } from "./createAnimation.js";
 import { registerCreateDomainService } from "./createDomainService.js";
+import { registerAnalyzeProject } from "./analyzeProject.js";
+import { registerPlanFeature } from "./planFeature.js";
+import { registerInspectScreen } from "./inspectScreen.js";
 import { registerTools } from "./index.js";
 
 describe("Tool registration", () => {
@@ -49,10 +52,22 @@ describe("Tool registration", () => {
         expect(() => registerCreateDomainService(server)).not.toThrow();
     });
 
-    it("registerTools registers all 10 tools", () => {
+    it("registerAnalyzeProject registers without error", () => {
+        expect(() => registerAnalyzeProject(server)).not.toThrow();
+    });
+
+    it("registerPlanFeature registers without error", () => {
+        expect(() => registerPlanFeature(server)).not.toThrow();
+    });
+
+    it("registerInspectScreen registers without error", () => {
+        expect(() => registerInspectScreen(server)).not.toThrow();
+    });
+
+    it("registerTools registers all 13 tools", () => {
         const spy = vi.spyOn(server, "registerTool");
         registerTools(server);
-        expect(spy).toHaveBeenCalledTimes(10);
+        expect(spy).toHaveBeenCalledTimes(13);
 
         const toolNames = spy.mock.calls.map((call) => call[0]);
         expect(toolNames).toContain("create_view");
@@ -65,5 +80,8 @@ describe("Tool registration", () => {
         expect(toolNames).toContain("create_animation");
         expect(toolNames).toContain("create_domain_service");
         expect(toolNames).toContain("create_loading");
+        expect(toolNames).toContain("analyze_project");
+        expect(toolNames).toContain("plan_feature");
+        expect(toolNames).toContain("inspect_screen");
     });
 });
