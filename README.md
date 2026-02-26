@@ -1,9 +1,5 @@
 # next2d-development-mcp
 
-<div align="center">
-  <img src="https://github.com/Next2D/next2d-development-mcp/raw/main/icon.png" width="180" alt="Next2D">
-</div>
-
 [![UnitTest](https://github.com/Next2D/next2d-development-mcp/actions/workflows/integration.yml/badge.svg?branch=main)](https://github.com/Next2D/next2d-development-mcp/actions/workflows/integration.yml)
 [![CodeQL](https://github.com/Next2D/next2d-development-mcp/actions/workflows/github-code-scanning/codeql/badge.svg?branch=main)](https://github.com/Next2D/next2d-development-mcp/actions/workflows/github-code-scanning/codeql)
 [![Lint](https://github.com/Next2D/next2d-development-mcp/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/Next2D/next2d-development-mcp/actions/workflows/lint.yml)
@@ -27,6 +23,7 @@ Provides code generation, architecture validation, and API reference following *
 - [Resources / リソース](#resources--リソース)
 - [Prompts / プロンプト](#prompts--プロンプト)
 - [サポートするアーキテクチャ / Supported Architecture](#サポートするアーキテクチャ--supported-architecture)
+- [関連リンク / Related Links](#関連リンク--related-links)
 - [License](#license)
 
 ---
@@ -43,11 +40,15 @@ This MCP server provides the following capabilities to AI agents:
 
 | 機能 / Feature | 説明 / Description |
 |---|---|
-| **コード生成** | View/ViewModel, UseCase, Repository, UI コンポーネント, Interface のスキャフォールディング |
+| **コード生成** | View/ViewModel, UseCase, Repository, UI コンポーネント, Interface, Animation, Domain Service のスキャフォールディング |
 | **ルーティング設定** | routing.json へのルートエントリ生成 |
 | **アーキテクチャ検証** | プロジェクト構造の Clean Architecture 準拠チェック |
+| **プロジェクト分析** | 実装済みファイルのスキャンと未実装箇所のレポート |
+| **画面インスペクション** | 特定画面の全関連ファイルの一覧と実装状況の確認 |
+| **実装計画生成** | 既存ファイルをスキップしつつ新規画面の順序付き実装ステップを生成 |
 | **API リファレンス** | Player API, Framework 仕様, 開発テンプレート仕様の提供 |
 | **開発ガイド** | 画面追加手順, コーディング規約, デバッグガイドの提供 |
+| **オーケストレーター** | 新規画面作成・既存画面修正をフェーズ別に自律実行 |
 
 ---
 
@@ -256,14 +257,32 @@ args: -y next2d-development-mcp
 
 ## Tools / ツール
 
+### オーケストレーション系 / Orchestration
+
+| Tool | Description |
+|---|---|
+| `analyze_project` | routing.json をスキャンし、View/ViewModel/UseCase/Repository の実装状況を一覧表示。新機能追加前の現状把握に使用 |
+| `inspect_screen` | 特定画面の全関連ファイル (View, ViewModel, Page, UseCase, Repository, Animation, Content) をファイル行数付きで一覧表示。既存画面修正前に使用 |
+| `plan_feature` | 新規画面の実装ステップを順序付きで生成。既存ファイルは ✅ としてスキップ。`analyze_project` 実行後に使用 |
+
+### コード生成系 / Code Generation
+
 | Tool | Description |
 |---|---|
 | `create_view` | View/ViewModel ペアを生成 (MVVM パターン)。`name` にルートパスを指定 (例: `home`, `quest/list`) |
 | `create_usecase` | UseCase クラスを生成 (Application 層)。1 アクション = 1 UseCase、`execute()` がエントリーポイント |
 | `create_repository` | Repository クラスを生成 (Infrastructure 層)。try-catch 必須、config からエンドポイント取得 |
 | `create_ui_component` | Atomic Design UI コンポーネント生成 (`atom` / `molecule` / `organism` / `page` / `content`) |
+| `create_animation` | UI トランジション用 Animation クラスを生成。`@next2d/ui` の Tween/Easing/Job を使用。`src/ui/animation/{screen}/` に配置 |
+| `create_domain_service` | Domain 層クラス (Service または Callback) を生成。Service はコアビジネスロジック、Callback は gotoView 完了後に実行 |
+| `create_loading` | ローディング画面クラスを生成。`start()` / `end()` メソッドを持ち、config.json の `loading.callback` で登録 |
 | `add_route` | routing.json へのルートエントリ生成。リクエスト設定 (`json` / `content` / `custom` / `cluster`) に対応 |
 | `create_interface` | TypeScript インターフェースファイル生成 (`I` プレフィックス規約に準拠) |
+
+### アーキテクチャ検証 / Architecture Validation
+
+| Tool | Description |
+|---|---|
 | `validate_architecture` | プロジェクト構造の検証。ディレクトリ構成、設定ファイル、routing.json ↔ View の整合性をチェック |
 
 ### ツール使用例 / Tool Usage Example
@@ -275,7 +294,7 @@ Next2Dプロジェクトに「quest/list」画面を追加して。
 APIからクエスト一覧を取得して表示するようにして。
 ```
 
-エージェントが自動的に `add_route` → `create_view` → `create_usecase` → `create_repository` → `create_interface` → `create_ui_component` を順に実行し、必要なファイルをすべて生成します。
+オーケストレーターモードでは `analyze_project` → `plan_feature` → `add_route` → `create_view` → `create_usecase` → `create_repository` → `create_interface` → `create_ui_component` → `create_animation` → `validate_architecture` を自律的に実行し、必要なファイルをすべて生成します。
 
 ---
 
@@ -294,9 +313,23 @@ APIからクエスト一覧を取得して表示するようにして。
 
 | Prompt | Parameters | Description |
 |---|---|---|
+| `orchestrate` | `task`, `screenPath`, `mode` | オーケストレーターモードを起動。`mode: "create"` で新規画面作成、`mode: "modify"` で既存画面修正のフェーズ別ワークフローを実行 |
 | `new-screen` | `screenName`, `hasApi?`, `hasAnimation?` | 新しい画面追加のステップバイステップガイド |
 | `architecture-guide` | — | アーキテクチャルールとコーディング規約のリファレンス |
 | `debug-help` | `issue` | よくある問題のデバッグのヒントとトラブルシューティング |
+
+### orchestrate プロンプトの使用例 / Orchestrate Prompt Example
+
+```
+# 新規画面作成
+orchestrate(task="クエスト一覧画面を追加", screenPath="quest/list", mode="create")
+
+# 既存画面修正
+orchestrate(task="ホーム画面に検索機能を追加", screenPath="home", mode="modify")
+```
+
+`create` モードでは `analyze_project` → `plan_feature` → 実装 → `validate_architecture` の順に実行します。
+`modify` モードでは `inspect_screen` → 対象ファイル Read → 最小変更 → `validate_architecture` の順に実行します。
 
 ---
 
@@ -308,9 +341,14 @@ src/
 ├── interface/                 # インターフェース定義 (I プレフィックス)
 ├── model/
 │   ├── application/           # UseCase (ビジネスロジック)
-│   ├── domain/                # コアビジネスルール
+│   ├── domain/
+│   │   └── callback/          # gotoView Callback / Loading クラス
+│   │       └── {name}/
+│   │           └── service/   # Domain Service (純粋ビジネスロジック)
 │   └── infrastructure/        # Repository (データアクセス)
 ├── ui/
+│   ├── animation/             # UI トランジション Animation クラス
+│   │   └── {screen}/          # 画面別ディレクトリ
 │   ├── component/
 │   │   ├── atom/              # 最小コンポーネント
 │   │   ├── molecule/          # 複合コンポーネント
