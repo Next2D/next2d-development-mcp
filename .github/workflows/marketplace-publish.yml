@@ -9,7 +9,14 @@ permissions:
   contents: read
 
 jobs:
+  lint:
+    uses: ./.github/workflows/lint.yml
+
+  integration:
+    uses: ./.github/workflows/integration.yml
+
   publish:
+    needs: [lint, integration]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -21,7 +28,7 @@ jobs:
           node-version: 24
           registry-url: "https://registry.npmjs.org"
       - run: npm install -g npm@latest
-      - run: npm install
+      - run: npm ci
       - run: npm run build
       - run: npx @vscode/vsce publish
         env:

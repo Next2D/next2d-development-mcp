@@ -3,12 +3,12 @@ name: Integration UnitTest
 on:
   push:
     branches:
-      - main
       - develop
   pull_request:
     branches:
       - main
       - develop
+  workflow_call:
 
 jobs:
   macos-browser-test:
@@ -26,8 +26,9 @@ jobs:
           repository: Next2D/player
           ref: main
       - run: npm install -g npm@latest
-      - run: npm install
+      - run: npm ci
       - run: npm run test
+      - run: npm audit --audit-level=high --omit=dev
 
   windows-browser-test:
     runs-on: windows-latest
@@ -44,5 +45,6 @@ jobs:
           repository: Next2D/player
           ref: main
       - run: npm install -g npm@latest
-      - run: npm install
+      - run: npm ci
       - run: npm run test
+      - run: npm audit --audit-level=high --omit=dev

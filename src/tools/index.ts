@@ -10,6 +10,9 @@ import { registerValidateArchitecture } from "./validateArchitecture.js";
 import { registerCreateAnimation } from "./createAnimation.js";
 import { registerCreateDomainService } from "./createDomainService.js";
 import { registerCreateLoading } from "./createLoading.js";
+import { registerAnalyzeProject } from "./analyzeProject.js";
+import { registerPlanFeature } from "./planFeature.js";
+import { registerInspectScreen } from "./inspectScreen.js";
 
 export { z };
 
@@ -24,4 +27,7 @@ export function registerTools(server: McpServer): void {
     registerCreateAnimation(server);
     registerCreateDomainService(server);
     registerCreateLoading(server);
+    registerAnalyzeProject(server);
+    registerPlanFeature(server);
+    registerInspectScreen(server);
 }

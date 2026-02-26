@@ -175,9 +175,9 @@ Application Layer (model/application/)
 \`\`\`
 
 ### View Layer (src/view/, src/ui/)
-- **View**: Extends Sprite, manages display structure. No business logic.
-- **ViewModel**: Bridge between View and Model. Holds UseCases.
-- **UI Components**: Atomic Design hierarchy (Atom → Molecule → Organism → Page)
+- **View**: Extends \`View<ViewModel>\` generic class. No business logic. Constructor calls \`super(vm)\`, creates Page component.
+- **ViewModel**: Bridge between View and Model. Holds UseCases. Initialized before View.
+- **UI Components**: Atomic Design hierarchy (Atom → Molecule → Organism → Page). View delegates to Page for UI setup.
 
 ### Interface Layer (src/interface/)
 - TypeScript interfaces with \`I\` prefix
@@ -224,9 +224,26 @@ URL-to-View mapping with request configurations.
 \`\`\`
 ViewModel.constructor → ViewModel.initialize() → View.constructor(vm) → View.initialize() → View.onEnter() → (interaction) → View.onExit()
 \`\`\`
+**Note:** View delegates to Page component: \`initialize()\` calls \`page.initialize(this.vm)\`, \`onEnter()\` calls \`await page.onEnter()\`.
+
+## Display Object Hierarchy
+\`\`\`
+DisplayObject (base)
+├── InteractiveObject
+│   ├── DisplayObjectContainer
+│   │   └── Sprite
+│   │       └── MovieClip    ← addChild() allowed, timeline animation
+│   └── TextField            ← addChild() NOT allowed, text display/input
+├── Shape                    ← addChild() NOT allowed, lightweight vector drawing
+└── Video                    ← addChild() NOT allowed, video playback
+\`\`\`
+**Key constraints:**
+- \`Shape\` has no \`addChild()\` — use \`Sprite\` or \`MovieClip\` as container
+- Casting \`Shape\` to \`Sprite\`: requires \`as unknown as Sprite\` two-step assertion
+- \`hitArea\` is \`Sprite | null\` — type assertion required for \`Shape\`
 
 ## Key Rules
-1. View: Display only. Delegate events to ViewModel.
+1. View: Display only. Delegate events to ViewModel. Use \`View<ViewModel>\` generic.
 2. ViewModel: Hold UseCases. Depend on interfaces. Get data via \`app.getResponse()\`.
 3. UseCase: Single responsibility. \`execute()\` entry point. Can call Repository, Domain, framework APIs.
 4. Repository: try-catch required. Config for endpoints. Return typed interfaces.
@@ -234,6 +251,8 @@ ViewModel.constructor → ViewModel.initialize() → View.constructor(vm) → Vi
 6. No \`any\` type. Explicit types always.
 7. Domain: No external API/DB dependencies (Next2D display APIs allowed). Pure business logic.
 8. Animation: Separate from components. Use Tween/Easing/Job.
+9. CSP: \`default-src 'self' data: blob:\`, \`worker-src 'self' blob: data:\`, \`style-src 'self' 'unsafe-inline'\` required. NEVER add \`frame-ancestors 'none'\`.
+10. E2E: After UI/screen changes, run \`npx playwright test\` to verify behavior.
 
 ## DisplayObject Centering Pattern
 \`\`\`typescript
