@@ -53,14 +53,14 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^25.6.0",
-    "@types/vscode": "^1.115.0",
+    "@types/vscode": "^1.116.0",
     "@typescript-eslint/eslint-plugin": "^8.58.2",
     "@typescript-eslint/parser": "^8.58.2",
-    "@vscode/vsce": "^3.8.0",
+    "@vscode/vsce": "^3.9.0",
     "eslint": "^10.2.0",
     "eslint-plugin-unused-imports": "^4.4.1",
     "globals": "^17.5.0",
-    "typescript": "^6.0.2",
+    "typescript": "^6.0.3",
     "vitest": "^4.1.4"
   },
   "engines": {
