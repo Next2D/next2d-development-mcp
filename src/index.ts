@@ -7,7 +7,7 @@ import { registerPrompts } from "./prompts/index.js";
 
 const server = new McpServer({
     "name": "next2d-development-mcp",
-    "version": "0.0.2"
+    "version": "1.1.6"
 });
 
 registerTools(server);
