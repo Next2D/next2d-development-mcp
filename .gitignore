@@ -2,3 +2,4 @@ node_modules/
 dist/
 next2d-development-assistant/
 *.tsbuildinfo
+.DS_Store
