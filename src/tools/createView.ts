@@ -10,7 +10,9 @@ export function registerCreateView(server: McpServer): void {
             "description":
                 "Create a new View and ViewModel pair following MVVM pattern. " +
                 "Generates {Name}View.ts and {Name}ViewModel.ts in src/view/{name}/. " +
-                "View extends Sprite and manages UI display. ViewModel handles business logic via UseCases.",
+                "View extends the framework View<ViewModel> generic class (display only, delegates to a Page component). " +
+                "ViewModel holds UseCases and fetches data in initialize(). " +
+                "Note: create the Page component first — the generated View imports it.",
             "inputSchema": {
                 "name": z.string().describe(
                     "View name (e.g. 'home', 'quest/list'). " +
@@ -43,9 +45,10 @@ export function registerCreateView(server: McpServer): void {
                             viewModelCode.trim(),
                             "```",
                             "",
-                            "### Next Steps",
-                            `1. Create directory: \`${dirPath}/\``,
-                            "2. Save the above files",
+                            "### Next Steps (in order)",
+                            "1. Create the Page component FIRST (the generated View imports it, so the project won't compile without it):",
+                            "   use `create_ui_component` with level \"page\" and screen \"${name.toLowerCase()}\"",
+                            `2. Create directory: \`${dirPath}/\` and save the View/ViewModel files above`,
                             "3. Add route to `src/config/routing.json`:",
                             "```json",
                             `"${name.toLowerCase()}": {`,
@@ -58,7 +61,7 @@ export function registerCreateView(server: McpServer): void {
                             `import { ${pascal}ViewModel } from "@/view/${screenDir}/${pascal}ViewModel";`,
                             "```",
                             `5. Update \`src/interface/IViewName.ts\` (add "${name.toLowerCase()}" to ViewName union type)`,
-                            "6. Add UI components (Page/Molecule/Atom) in `src/ui/`"
+                            "6. Add the remaining UI components (Molecule/Atom) in `src/ui/` as needed"
                         ].join("\n")
                     }
                 ]

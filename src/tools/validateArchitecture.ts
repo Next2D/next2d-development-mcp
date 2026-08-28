@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { viewDirCandidates } from "../utils.js";
 
 function checkDir(base: string, dir: string): { exists: boolean; path: string } {
     const full = path.join(base, dir);
@@ -11,6 +12,93 @@ function checkDir(base: string, dir: string): { exists: boolean; path: string } 
 function checkFile(base: string, file: string): { exists: boolean; path: string } {
     const full = path.join(base, file);
     return { "exists": fs.existsSync(full), "path": full };
+}
+
+const STAGE_ALLOWED_TOP_KEYS = ["width", "height", "fps", "options"];
+// "base" is declared in the framework IOptions interface (build-time asset path)
+const STAGE_ALLOWED_OPTION_KEYS = ["fullScreen", "tagId", "bgColor", "base"];
+const FLASH_KEY_HINTS: Record<string, string> = {
+    "scaleMode": "Next2D is not a Flash Player derivative. To fill the window, use options.fullScreen: true",
+    "align": "Next2D is not a Flash Player derivative. To fill the window, use options.fullScreen: true",
+    "quality": "Not supported. Adjust fps or use cacheAsBitmap for performance",
+    "wmode": "Not supported. No equivalent setting in Next2D",
+    "allowFullScreen": "Wrong name. Use options.fullScreen instead",
+    "backgroundColor": "Wrong location. Use options.bgColor instead"
+};
+
+export interface StageJsonReport {
+    issues: string[];
+    ok: string[];
+}
+
+/**
+ * Validate stage.json content against the strict whitelist of supported keys.
+ * Next2D Player is not a Flash Player derivative: unknown keys are silently
+ * ignored by the framework, so they must be flagged as configuration mistakes.
+ */
+export function validateStageJson(content: string): StageJsonReport {
+    const issues: string[] = [];
+    const ok: string[] = [];
+
+    let stage: unknown;
+    try {
+        stage = JSON.parse(content);
+    } catch {
+        issues.push("❌ stage.json is not valid JSON");
+        return { issues, ok };
+    }
+    if (typeof stage !== "object" || stage === null || Array.isArray(stage)) {
+        issues.push("❌ stage.json must be a JSON object");
+        return { issues, ok };
+    }
+
+    const obj = stage as Record<string, unknown>;
+
+    const flagUnknownKey = (key: string, allowed: string[]): void => {
+        if (allowed.includes(key)) { return }
+        const hint = FLASH_KEY_HINTS[key];
+        issues.push(
+            `❌ Invalid stage.json key: '${key}' (silently ignored by the framework). ` +
+            (hint ?? "Only whitelisted keys are valid. Remove it or implement the behavior in code.")
+        );
+    };
+
+    for (const key of Object.keys(obj)) {
+        flagUnknownKey(key, STAGE_ALLOWED_TOP_KEYS);
+    }
+
+    const width = obj.width;
+    const height = obj.height;
+    const fps = obj.fps;
+
+    if (width === undefined || height === undefined || fps === undefined) {
+        issues.push("⚠️ stage.json missing required fields: width, height, fps");
+    }
+    if (width !== undefined && (typeof width !== "number" || width <= 0)) {
+        issues.push("⚠️ stage.json: width must be a positive number");
+    }
+    if (height !== undefined && (typeof height !== "number" || height <= 0)) {
+        issues.push("⚠️ stage.json: height must be a positive number");
+    }
+    if (fps !== undefined && (typeof fps !== "number" || fps < 1 || fps > 60)) {
+        issues.push("⚠️ stage.json: fps must be a number between 1 and 60");
+    }
+
+    if (obj.options !== undefined) {
+        if (typeof obj.options !== "object" || obj.options === null || Array.isArray(obj.options)) {
+            issues.push("⚠️ stage.json: options must be an object");
+        } else {
+            for (const key of Object.keys(obj.options as Record<string, unknown>)) {
+                flagUnknownKey(key, STAGE_ALLOWED_OPTION_KEYS);
+            }
+        }
+    }
+
+    if (issues.length === 0) {
+        ok.push(`✅ stage.json valid (${width}x${height} @${fps}fps)`);
+    }
+
+    return { issues, ok };
 }
 
 export function registerValidateArchitecture(server: McpServer): void {
@@ -89,14 +177,17 @@ export function registerValidateArchitecture(server: McpServer): void {
 
                     for (const key of Object.keys(routing)) {
                         if (key.startsWith("@")) { continue } // Skip cluster definitions
-                        // View directory uses the first segment for slash routes (e.g. "quest/list" → "quest")
-                        const screenDir = key.includes("/") ? key.split("/")[0].toLowerCase() : key.toLowerCase();
-                        const viewDir = path.join(base, "src/view", screenDir);
-                        if (fs.existsSync(viewDir)) {
+                        // View directory may use the first segment or the full nested path
+                        const candidateDirs = viewDirCandidates(key);
+                        const viewDir = candidateDirs
+                            .map((dir) => path.join(base, "src/view", dir))
+                            .find((dir) => fs.existsSync(dir));
+                        if (viewDir) {
                             ok.push(`✅ View directory for route '${key}'`);
                         } else {
+                            const dirs = candidateDirs.map((dir) => `src/view/${dir}/`).join(" or ");
                             issues.push(
-                                `⚠️ Route '${key}' defined in routing.json but missing view directory: src/view/${screenDir}/`
+                                `⚠️ Route '${key}' defined in routing.json but missing view directory: ${dirs}`
                             );
                         }
                     }
@@ -105,22 +196,15 @@ export function registerValidateArchitecture(server: McpServer): void {
                 }
             }
 
-            // Check stage.json validity
+            // Check stage.json validity (strict key whitelist: Next2D is not a Flash Player derivative)
             const stagePath = path.join(base, "src/config/stage.json");
             if (fs.existsSync(stagePath)) {
-                try {
-                    const stage = JSON.parse(
-                        fs.readFileSync(stagePath, "utf-8")
-                    );
-                    if (!stage.width || !stage.height || !stage.fps) {
-                        issues.push(
-                            "⚠️ stage.json missing required fields: width, height, fps"
-                        );
-                    } else {
-                        ok.push(`✅ stage.json valid (${stage.width}x${stage.height} @${stage.fps}fps)`);
-                    }
-                } catch {
-                    issues.push("❌ stage.json is not valid JSON");
+                const report = validateStageJson(fs.readFileSync(stagePath, "utf-8"));
+                for (const issue of report.issues) {
+                    issues.push(issue);
+                }
+                for (const pass of report.ok) {
+                    ok.push(pass);
                 }
             }
 

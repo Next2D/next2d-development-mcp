@@ -2,13 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import * as fs from "node:fs";
 import * as path from "node:path";
-
-function toPascal(name: string): string {
-    return name
-        .split(/[/\-_]/)
-        .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-        .join("");
-}
+import { toPascalCase, toCamelCase, viewDirCandidates, viewDirForRoute } from "../utils.js";
 
 export function registerPlanFeature(server: McpServer): void {
     server.registerTool(
@@ -36,10 +30,12 @@ export function registerPlanFeature(server: McpServer): void {
         },
         async ({ screenPath, hasApi, hasContent, projectPath }) => {
             const base = path.resolve(projectPath);
-            const pascal = toPascal(screenPath);
-            const screenDir = screenPath.includes("/")
-                ? screenPath.split("/")[0].toLowerCase()
-                : screenPath.toLowerCase();
+            const pascal = toPascalCase(screenPath);
+            // View files may live in the first-segment dir or the full nested dir
+            const viewDir = viewDirForRoute(base, screenPath);
+            // Page/UseCase/Animation dirs always use the first segment
+            const pageDir = viewDirCandidates(screenPath)[0];
+            const camel = toCamelCase(screenPath);
 
             // --- Detect what already exists ---
             const routingPath = path.join(base, "src/config/routing.json");
@@ -54,16 +50,16 @@ export function registerPlanFeature(server: McpServer): void {
             }
 
             const viewExists = fs.existsSync(
-                path.join(base, `src/view/${screenDir}/${pascal}View.ts`)
+                path.join(base, `src/view/${viewDir}/${pascal}View.ts`)
             );
             const vmExists = fs.existsSync(
-                path.join(base, `src/view/${screenDir}/${pascal}ViewModel.ts`)
+                path.join(base, `src/view/${viewDir}/${pascal}ViewModel.ts`)
             );
             const repoExists = fs.existsSync(
                 path.join(base, `src/model/infrastructure/repository/${pascal}Repository.ts`)
             );
             const pageExists = fs.existsSync(
-                path.join(base, `src/ui/component/page/${screenDir}/${pascal}Page.ts`)
+                path.join(base, `src/ui/component/page/${pageDir}/${pascal}Page.ts`)
             );
             const contentExists = fs.existsSync(
                 path.join(base, `src/ui/content/${pascal}Content.ts`)
@@ -76,7 +72,7 @@ export function registerPlanFeature(server: McpServer): void {
                 "|------|-------|",
                 `| Screen path | \`${screenPath}\` |`,
                 `| Class prefix | \`${pascal}\` |`,
-                `| View directory | \`src/view/${screenDir}/\` |`,
+                `| View directory | \`src/view/${viewDir}/\` |`,
                 `| Features | ${[hasApi ? "API data" : "", hasContent ? "Animation Tool content" : ""].filter(Boolean).join(", ") || "Basic screen"} |`,
                 "",
                 "---",
@@ -145,9 +141,9 @@ export function registerPlanFeature(server: McpServer): void {
                 lines.push(`### Step ${step}: Create Fetch UseCase`);
                 lines.push("**Tool:** `create_usecase`");
                 lines.push("```");
-                lines.push(`create_usecase({ name: "Fetch${pascal}Data", screen: "${screenDir}" })`);
+                lines.push(`create_usecase({ name: "Fetch${pascal}Data", screen: "${pageDir}" })`);
                 lines.push("```");
-                lines.push(`**Output:** \`src/model/application/${screenDir}/usecase/Fetch${pascal}DataUseCase.ts\``);
+                lines.push(`**Output:** \`src/model/application/${pageDir}/usecase/Fetch${pascal}DataUseCase.ts\``);
                 lines.push("**Implement:** Call Repository, return typed data");
                 lines.push("");
                 step++;
@@ -157,9 +153,9 @@ export function registerPlanFeature(server: McpServer): void {
             lines.push(`### Step ${step}: Create Navigation UseCase`);
             lines.push("**Tool:** `create_usecase`");
             lines.push("```");
-            lines.push(`create_usecase({ name: "NavigateToView", screen: "${screenDir}" })`);
+            lines.push(`create_usecase({ name: "NavigateToView", screen: "${pageDir}" })`);
             lines.push("```");
-            lines.push(`**Output:** \`src/model/application/${screenDir}/usecase/NavigateToViewUseCase.ts\``);
+            lines.push(`**Output:** \`src/model/application/${pageDir}/usecase/NavigateToViewUseCase.ts\``);
             lines.push("**Implement:** `await app.gotoView(viewName)` inside execute()");
             lines.push("");
             step++;
@@ -175,8 +171,8 @@ export function registerPlanFeature(server: McpServer): void {
                 lines.push(`create_view({ name: "${screenPath}" })`);
                 lines.push("```");
                 lines.push("**Output:**");
-                lines.push(`- \`src/view/${screenDir}/${pascal}View.ts\``);
-                lines.push(`- \`src/view/${screenDir}/${pascal}ViewModel.ts\``);
+                lines.push(`- \`src/view/${viewDir}/${pascal}View.ts\``);
+                lines.push(`- \`src/view/${viewDir}/${pascal}ViewModel.ts\``);
                 lines.push("**After creation:**");
                 lines.push(`- Register in \`src/Packages.ts\` (import ${pascal}View, ${pascal}ViewModel)`);
                 lines.push(`- Add \`"${screenPath}"\` to \`src/interface/IViewName.ts\` union type`);
@@ -191,9 +187,9 @@ export function registerPlanFeature(server: McpServer): void {
                 lines.push(`### Step ${step}: Create Page Component`);
                 lines.push("**Tool:** `create_ui_component`");
                 lines.push("```");
-                lines.push(`create_ui_component({ name: "${pascal}Page", level: "page", screen: "${screenDir}" })`);
+                lines.push(`create_ui_component({ name: "${pascal}Page", level: "page", screen: "${pageDir}" })`);
                 lines.push("```");
-                lines.push(`**Output:** \`src/ui/component/page/${screenDir}/${pascal}Page.ts\``);
+                lines.push(`**Output:** \`src/ui/component/page/${pageDir}/${pascal}Page.ts\``);
                 lines.push("**Implement:**");
                 lines.push("- `initialize(vm)`: Create Atom/Molecule components, register event listeners");
                 lines.push("- `onEnter()`: Start entry animations");
@@ -223,9 +219,9 @@ export function registerPlanFeature(server: McpServer): void {
             lines.push(`### Step ${step}: Create Entry Animation (recommended)`);
             lines.push("**Tool:** `create_animation`");
             lines.push("```");
-            lines.push(`create_animation({ component: "${pascal}Page", action: "Show", screen: "${screenDir}" })`);
+            lines.push(`create_animation({ component: "${pascal}Page", action: "Show", screen: "${pageDir}" })`);
             lines.push("```");
-            lines.push(`**Output:** \`src/ui/animation/${screenDir}/${pascal}PageShowAnimation.ts\``);
+            lines.push(`**Output:** \`src/ui/animation/${pageDir}/${pascal}PageShowAnimation.ts\``);
             lines.push("**Implement:** Use `Tween.add()` with `Easing.*`. Call `job.start()` in `onEnter()`");
             lines.push("");
             step++;
@@ -244,14 +240,14 @@ export function registerPlanFeature(server: McpServer): void {
             lines.push("### View Pattern");
             lines.push("```typescript");
             lines.push(`export class ${pascal}View extends View<${pascal}ViewModel> {`);
-            lines.push(`    private readonly _${screenDir}Page: ${pascal}Page;`);
+            lines.push(`    private readonly _${camel}Page: ${pascal}Page;`);
             lines.push(`    constructor(vm: ${pascal}ViewModel) {`);
             lines.push("        super(vm);");
-            lines.push(`        this._${screenDir}Page = new ${pascal}Page();`);
-            lines.push(`        this.addChild(this._${screenDir}Page);`);
+            lines.push(`        this._${camel}Page = new ${pascal}Page();`);
+            lines.push(`        this.addChild(this._${camel}Page);`);
             lines.push("    }");
-            lines.push(`    async initialize(): Promise<void> { this._${screenDir}Page.initialize(this.vm); }`);
-            lines.push(`    async onEnter(): Promise<void> { await this._${screenDir}Page.onEnter(); }`);
+            lines.push(`    async initialize(): Promise<void> { this._${camel}Page.initialize(this.vm); }`);
+            lines.push(`    async onEnter(): Promise<void> { await this._${camel}Page.onEnter(); }`);
             lines.push("    async onExit(): Promise<void> { return void 0; }");
             lines.push("}");
             lines.push("```");

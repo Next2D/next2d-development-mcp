@@ -11,7 +11,7 @@ on:
   workflow_call:
 
 jobs:
-  macos-browser-test:
+  macos-test:
     runs-on: macos-latest
     permissions:
       contents: read
@@ -19,17 +19,16 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-          registry-url: "https://registry.npmjs.org"
       - uses: actions/checkout@v6
         with:
-          repository: Next2D/player
-          ref: main
+          submodules: true
       - run: npm install -g npm@latest
       - run: npm ci
+      - run: npm run lint
       - run: npm run test
       - run: npm audit --audit-level=high --omit=dev
 
-  windows-browser-test:
+  windows-test:
     runs-on: windows-latest
     permissions:
       contents: read
@@ -37,12 +36,11 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-          registry-url: "https://registry.npmjs.org"
       - uses: actions/checkout@v6
         with:
-          repository: Next2D/player
-          ref: main
+          submodules: true
       - run: npm install -g npm@latest
       - run: npm ci
+      - run: npm run lint
       - run: npm run test
       - run: npm audit --audit-level=high --omit=dev

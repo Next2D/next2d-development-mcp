@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { toPascalCase, viewDirForRoute } from "../utils.js";
 
 function walkDir(dir: string, suffix: string, results: string[] = []): string[] {
     if (!fs.existsSync(dir)) { return results }
@@ -57,13 +58,8 @@ export function registerAnalyzeProject(server: McpServer): void {
 
                     for (const route of screenRoutes) {
                         routes.push(route);
-                        const screenDir = route.includes("/")
-                            ? route.split("/")[0].toLowerCase()
-                            : route.toLowerCase();
-                        const pascal = route
-                            .split("/")
-                            .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-                            .join("");
+                        const pascal = toPascalCase(route);
+                        const screenDir = viewDirForRoute(base, route);
 
                         const viewFile = path.join(base, `src/view/${screenDir}/${pascal}View.ts`);
                         const vmFile = path.join(base, `src/view/${screenDir}/${pascal}ViewModel.ts`);

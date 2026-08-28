@@ -1,5 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+import { toPascalCase } from "../utils.js";
 
 export function registerAddRoute(server: McpServer): void {
     server.registerTool(
@@ -74,10 +75,7 @@ export function registerAddRoute(server: McpServer): void {
 
             const json = JSON.stringify({ [path]: routeEntry }, null, 4);
 
-            const pascal = path
-                .split(/[\\/]/)
-                .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-                .join("");
+            const pascal = toPascalCase(path);
 
             const screenDir = path.includes("/") ? path.split("/")[0].toLowerCase() : path.toLowerCase();
 

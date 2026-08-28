@@ -5,8 +5,21 @@ import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+// dist/resources or src/resources -> project root
+export const PROJECT_ROOT = path.resolve(__dirname, "..", "..");
 
-function loadReference(filename: string): string {
+export interface DiscoveredResource {
+    name: string;
+    uri: string;
+    description: string;
+    filePath: string;
+}
+
+/**
+ * Reference directories that may exist, in priority order.
+ * The first existing directory provides a given file.
+ */
+export function findReferenceDirs(cwd: string = process.cwd()): string[] {
     // Search locations (in priority order):
     // 1. Bundled with package: dist/references/ (works after npm publish)
     // 2. Development submodule: next2d-development-assistant/skills/next2d-development-assistant/references/
@@ -16,115 +29,136 @@ function loadReference(filename: string): string {
     // 6. User's project submodule (legacy layout): cwd/next2d-development-assistant/.github/skills/references/
     // 7. User's project (legacy): cwd/.github/skills/references/
     const candidates = [
-        path.join(__dirname, "..", "references", filename),
-        path.join(
-            __dirname,
-            "..",
-            "..",
-            "next2d-development-assistant",
-            "skills",
-            "next2d-development-assistant",
-            "references",
-            filename
-        ),
-        path.join(
-            __dirname,
-            "..",
-            "..",
-            "next2d-development-assistant",
-            ".github",
-            "skills",
-            "references",
-            filename
-        ),
-        path.join(__dirname, "..", "..", ".github", "skills", "references", filename),
-        path.join(
-            process.cwd(),
-            "next2d-development-assistant",
-            "skills",
-            "next2d-development-assistant",
-            "references",
-            filename
-        ),
-        path.join(
-            process.cwd(),
-            "next2d-development-assistant",
-            ".github",
-            "skills",
-            "references",
-            filename
-        ),
-        path.join(process.cwd(), ".github", "skills", "references", filename)
+        path.join(__dirname, "..", "references"),
+        path.join(PROJECT_ROOT, "next2d-development-assistant", "skills", "next2d-development-assistant", "references"),
+        path.join(PROJECT_ROOT, "next2d-development-assistant", ".github", "skills", "references"),
+        path.join(PROJECT_ROOT, ".github", "skills", "references"),
+        path.join(cwd, "next2d-development-assistant", "skills", "next2d-development-assistant", "references"),
+        path.join(cwd, "next2d-development-assistant", ".github", "skills", "references"),
+        path.join(cwd, ".github", "skills", "references")
     ];
 
-    for (const candidate of candidates) {
-        if (fs.existsSync(candidate)) {
-            return fs.readFileSync(candidate, "utf-8");
+    return candidates.filter((dir) => fs.existsSync(dir));
+}
+
+/**
+ * Default destination for the add-resource CLI command.
+ * Prefers the source-of-truth submodule directory when available.
+ */
+export function defaultTargetDir(): string {
+    const candidates = [
+        path.join(PROJECT_ROOT, "next2d-development-assistant", "skills", "next2d-development-assistant", "references"),
+        path.join(__dirname, "..", "references")
+    ];
+    const existing = candidates.find((dir) => fs.existsSync(dir));
+    return existing ?? candidates[0];
+}
+
+/**
+ * Derive a one-line description from a markdown document.
+ * Uses the first H1 title and the first non-heading body line.
+ */
+export function deriveDescription(content: string, maxLength = 256): string {
+    const lines = content
+        .split(/\r?\n/)
+        .map((line) => line.trim());
+    const isBodyLine = (line: string): boolean =>
+        line !== "" &&
+        !/^#{1,6}\s/.test(line) &&
+        !/^-{3,}$/.test(line) &&
+        !/^\*{3,}$/.test(line) &&
+        !/^_{3,}$/.test(line);
+    const title = lines.find((line) => /^#\s+/.test(line));
+    const body = lines.find(isBodyLine);
+    const parts = [title ? title.replace(/^#\s+/, "") : "", body ?? ""].filter((part) => part !== "");
+    const text = parts.join(" - ");
+    if (text.length <= maxLength) {
+        return text;
+    }
+    return text.slice(0, maxLength - 1) + "…";
+}
+
+/**
+ * Discover all markdown reference files across the reference directories.
+ * Each file becomes a resource: <name>.md -> next2d://specs/<name>
+ * Files are deduplicated by name; earlier directories take priority.
+ */
+export function discoverResources(dirs: string[] = findReferenceDirs()): DiscoveredResource[] {
+    const seen = new Map<string, DiscoveredResource>();
+
+    for (const dir of dirs) {
+        let entries: string[];
+        try {
+            entries = fs.readdirSync(dir).sort();
+        } catch {
+            continue;
+        }
+
+        for (const file of entries) {
+            if (!file.endsWith(".md")) {
+                continue;
+            }
+            const name = file.slice(0, -".md".length);
+            if (seen.has(name)) {
+                continue;
+            }
+            const filePath = path.join(dir, file);
+            let description = name;
+            try {
+                description = deriveDescription(fs.readFileSync(filePath, "utf-8")) || name;
+            } catch {
+                // Unreadable file: keep the file name as description
+            }
+            seen.set(name, {
+                name,
+                "uri": `next2d://specs/${name}`,
+                description,
+                filePath
+            });
         }
     }
 
-    return `Reference file '${filename}' not found. Searched: ${candidates.join(", ")}`;
+    return [...seen.values()];
 }
 
 export function registerResources(server: McpServer): void {
-    server.registerResource(
-        "player-specs",
-        "next2d://specs/player",
-        {
-            "description":
-                "Next2D Player API reference - DisplayObject, MovieClip, Sprite, Shape, TextField, " +
-                "Video, Sound, Tween, Events, Filters, Geom. Read when implementing rendering, " +
-                "animation, graphics, or interaction logic.",
-            "mimeType": "text/markdown"
-        },
-        async () => ({
-            "contents": [
-                {
-                    "uri": "next2d://specs/player",
-                    "mimeType": "text/markdown",
-                    "text": loadReference("player-specs.md")
-                }
-            ]
-        })
-    );
+    const resources = discoverResources();
+
+    for (const res of resources) {
+        server.registerResource(
+            res.name,
+            res.uri,
+            {
+                "description": res.description,
+                "mimeType": "text/markdown"
+            },
+            async () => ({
+                "contents": [
+                    {
+                        "uri": res.uri,
+                        "mimeType": "text/markdown",
+                        "text": fs.readFileSync(res.filePath, "utf-8")
+                    }
+                ]
+            })
+        );
+    }
 
     server.registerResource(
-        "framework-specs",
-        "next2d://specs/framework",
+        "specs-index",
+        "next2d://specs",
         {
             "description":
-                "Next2D Framework reference - MVVM architecture, routing, config, " +
-                "View/ViewModel lifecycle, Animation Tool integration, gotoView flow. " +
-                "Read when working on application architecture, screen transitions, or configuration.",
+                "Index of all available Next2D reference resources. " +
+                "Read this first to discover what references exist, then read the specific resource.",
             "mimeType": "text/markdown"
         },
         async () => ({
             "contents": [
                 {
-                    "uri": "next2d://specs/framework",
+                    "uri": "next2d://specs",
                     "mimeType": "text/markdown",
-                    "text": loadReference("framework-specs.md")
-                }
-            ]
-        })
-    );
-
-    server.registerResource(
-        "develop-specs",
-        "next2d://specs/develop",
-        {
-            "description":
-                "Development template specs - project structure, CLI commands, interfaces, " +
-                "Model layer, UI layer with Atomic Design, View/ViewModel patterns. " +
-                "Read when creating new components, setting up projects, or following coding patterns.",
-            "mimeType": "text/markdown"
-        },
-        async () => ({
-            "contents": [
-                {
-                    "uri": "next2d://specs/develop",
-                    "mimeType": "text/markdown",
-                    "text": loadReference("develop-specs.md")
+                    "text": buildSpecsIndex(resources)
                 }
             ]
         })
@@ -149,6 +183,24 @@ export function registerResources(server: McpServer): void {
             ]
         })
     );
+}
+
+function buildSpecsIndex(resources: DiscoveredResource[]): string {
+    const rows = resources
+        .map((res) => `| ${res.name} | \`${res.uri}\` | ${res.description} |`)
+        .join("\n");
+
+    return [
+        "# Next2D Reference Resources",
+        "",
+        `Found ${resources.length} reference resource(s).`,
+        "",
+        "| Resource | URI | Description |",
+        "|---|---|---|",
+        rows,
+        "",
+        "Read a specific resource by its URI to get the full reference."
+    ].join("\n");
 }
 
 const ARCHITECTURE_OVERVIEW = `# Next2D Architecture Overview
@@ -205,6 +257,7 @@ Application Layer (model/application/)
 \`\`\`json
 { "width": 240, "height": 240, "fps": 60, "options": { "fullScreen": true } }
 \`\`\`
+**Warning:** Only \`width\`/\`height\`/\`fps\`/\`options\` (\`fullScreen\`, \`tagId\`, \`bgColor\`) can be set in stage.json. Flash-era options (\`scaleMode\`, \`align\`, \`quality\`, \`wmode\`, etc.) are NOT supported — Next2D Player is not a Flash Player derivative. Unknown keys are silently ignored. Use \`options.fullScreen: true\` to fill the window.
 
 ### config.json
 Environment-specific settings (local/dev/stg/prd) + common settings (all).
