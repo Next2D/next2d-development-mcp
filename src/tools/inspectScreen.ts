@@ -2,13 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import * as fs from "node:fs";
 import * as path from "node:path";
-
-function toPascal(name: string): string {
-    return name
-        .split(/[/\-_]/)
-        .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-        .join("");
-}
+import { toPascalCase, viewDirForRoute } from "../utils.js";
 
 function walkDir(dir: string, suffix: string, results: string[] = []): string[] {
     if (!fs.existsSync(dir)) { return results }
@@ -57,10 +51,8 @@ export function registerInspectScreen(server: McpServer): void {
         },
         async ({ screenPath, projectPath }) => {
             const base = path.resolve(projectPath);
-            const pascal = toPascal(screenPath);
-            const screenDir = screenPath.includes("/")
-                ? screenPath.split("/")[0].toLowerCase()
-                : screenPath.toLowerCase();
+            const pascal = toPascalCase(screenPath);
+            const screenDir = viewDirForRoute(base, screenPath);
 
             const lines: string[] = [
                 `## Screen Inspection: \`${screenPath}\``,

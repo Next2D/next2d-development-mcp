@@ -24,7 +24,8 @@ export function registerCreateUiComponent(server: McpServer): void {
                 ),
                 "screen": z.string().optional().describe(
                     "Screen name for page-level components (e.g. 'top', 'home', 'quest'). " +
-                    "Determines the subdirectory under page/. Required for page level."
+                    "Determines the subdirectory under page/ and the View import path. " +
+                    "Defaults to the first segment of name."
                 )
             }
         },
@@ -60,9 +61,9 @@ export function registerCreateUiComponent(server: McpServer): void {
 
             const suffix = level.charAt(0).toUpperCase() + level.slice(1);
             const className = pascal.endsWith(suffix) ? pascal : `${pascal}${suffix}`;
-            // Page components are organized by screen subdirectory
+            // Page components are organized by screen subdirectory (first segment of the route)
             const screenDir = level === "page"
-                ? (screen || name.toLowerCase())
+                ? (screen || name.split("/")[0].toLowerCase())
                 : "";
             const filePath = level === "page"
                 ? `src/ui/component/page/${screenDir}/${className}.ts`

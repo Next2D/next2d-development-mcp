@@ -47,6 +47,7 @@ This MCP server provides the following capabilities to AI agents:
 | **画面インスペクション** | 特定画面の全関連ファイルの一覧と実装状況の確認 |
 | **実装計画生成** | 既存ファイルをスキップしつつ新規画面の順序付き実装ステップを生成 |
 | **API リファレンス** | Player API, Framework 仕様, 開発テンプレート仕様の提供 |
+| **リソース管理** | CLI コマンドでリファレンスリソースを登録（`add-resource` / `list-resources`） |
 | **開発ガイド** | 画面追加手順, コーディング規約, デバッグガイドの提供 |
 | **オーケストレーター** | 新規画面作成・既存画面修正をフェーズ別に自律実行 |
 
@@ -56,7 +57,7 @@ This MCP server provides the following capabilities to AI agents:
 
 | ツール / Tool | バージョン / Version |
 |---|---|
-| Node.js | 22.x 以上 / 22.x or higher |
+| Node.js | 24.x 以上 / 24.x or higher |
 | npm | 10.x 以上 / 10.x or higher |
 
 ---
@@ -283,7 +284,7 @@ args: -y next2d-development-mcp
 
 | Tool | Description |
 |---|---|
-| `validate_architecture` | プロジェクト構造の検証。ディレクトリ構成、設定ファイル、routing.json ↔ View の整合性をチェック |
+| `validate_architecture` | プロジェクト構造の検証。ディレクトリ構成、設定ファイル、routing.json ↔ View の整合性（flat / ネスト両レイアウト対応）、**stage.json の有効キー検証**（`scaleMode` 等の無効キーを検出）をチェック |
 
 ### ツール使用例 / Tool Usage Example
 
@@ -300,12 +301,79 @@ APIからクエスト一覧を取得して表示するようにして。
 
 ## Resources / リソース
 
+references ディレクトリ内の **Markdown ファイルはすべて自動的にリソースとして登録**されます。ファイル名が URI になります（`<name>.md` → `next2d://specs/<name>`）。
+
+All markdown files in the references directory are **automatically registered as MCP resources**. The file name becomes the URI (`<name>.md` → `next2d://specs/<name>`).
+
 | Resource | URI | Description |
 |---|---|---|
-| Player API Specs | `next2d://specs/player` | DisplayObject, MovieClip, Sprite, Shape, TextField, Video, Sound, Tween, Events, Filters 等の API リファレンス |
-| Framework Specs | `next2d://specs/framework` | MVVM アーキテクチャ, ルーティング, config 設定, View/ViewModel ライフサイクル, gotoView フロー |
-| Development Specs | `next2d://specs/develop` | プロジェクト構造, CLI コマンド, Interface 定義, Model 層, UI 層 (Atomic Design), View/ViewModel パターン |
+| Specs Index | `next2d://specs` | 利用可能な全リファレンスリソースの索引 |
+| Player Overview | `next2d://specs/player-overview` | Player概要・レンダリングパイプライン・DisplayListアーキテクチャ |
+| Player Display Objects | `next2d://specs/player-display-objects` | クラス選び・型制約・キャッシュのポイント（クイック） |
+| Player Events | `next2d://specs/player-events` | EventDispatcher / Pointer / Keyboard / Gamepad / Video / Job イベント |
+| Player Media & Text | `next2d://specs/player-media-text` | テキスト・音声・動画のポイント（クイック） |
+| Player Tween | `next2d://specs/player-tween` | Tween / Job / Easing（32種類） |
+| Player Filters | `next2d://specs/player-filters` | BlurFilter / DropShadowFilter / GlowFilter 等の9種 |
+| Framework Specs | `next2d://specs/framework-specs` | MVVM アーキテクチャ, ルーティング, config 設定, View/ViewModel ライフサイクル, gotoView フロー |
+| Development Specs | `next2d://specs/develop-specs` | プロジェクト構造, CLI コマンド, Interface 定義, Model 層, UI 層 (Atomic Design), View/ViewModel パターン |
 | Architecture Overview | `next2d://architecture` | アーキテクチャ概要, レイヤー構成, 設定ファイル仕様, ライフサイクル, npm コマンド一覧 |
+| Player Sprite | `next2d://specs/player-sprite` | Sprite |
+| Player Display Object | `next2d://specs/player-display-object` | DisplayObject |
+| Player Movie Clip | `next2d://specs/player-movie-clip` | MovieClip |
+| Player Shape | `next2d://specs/player-shape` | Shape |
+| Player Text Field | `next2d://specs/player-text-field` | TextField |
+| Player Video | `next2d://specs/player-video` | Video |
+| Player Sound | `next2d://specs/player-sound` | Sound |
+
+### リソースの追加 / Adding Resources
+
+CLI コマンドで新しいリファレンスリソースを登録できます。ファイルのコピー、SKILL.md の References 更新、README の表更新が自動で行われます。
+
+Register a new reference resource via CLI. It copies the file, updates the SKILL.md references list, and updates the table above automatically.
+
+```bash
+# このリポジトリで実行（ビルドは pre スクリプトで自動）
+npm run add-resource -- path/to/new-spec.md --name new-spec --description "説明"
+
+# インストール済みパッケージからも実行可能
+npx next2d-development-mcp add-resource path/to/new-spec.md --name new-spec
+
+# 登録されるリソースの一覧表示
+npm run list-resources
+```
+
+| Option | Description |
+|---|---|
+| `--name <name>` | リソース名（既定: ファイル名）。`player-*` は Player セクションに、`framework-*` / `develop-*` は Framework セクションへ自動分類 |
+| `--description <text>` | リソース説明（既定: ファイルの H1 と先頭本文から自動生成） |
+| `--category <prefix>` | URI プレフィックス（既定 `specs`） |
+| `--force` | 既存ファイルを上書き |
+| `--target` / `--skill` / `--readme` | 更新先を明示指定 |
+| `--no-skill` / `--no-readme` | ドキュメント更新をスキップ |
+
+Example:
+
+```bash
+# Next2D Player の仕様から Sprite リファレンスを追加
+npm run add-resource -- ../player/specs/ja/sprite.md --name player-sprite --description "Sprite"
+```
+
+追加後は `npm run build && npm publish` で公開してください。
+After adding, run `npm run build && npm publish` to release the new resource.
+
+### 情報量のガイドライン / Reference Size Guidelines
+
+AI のコンテキスト負荷を抑えるためのルール。
+Rules for keeping the AI context load low.
+
+1. **SKILL.md は常時ロードされる** → References の各項目は短いトリガー文にする（API名の列挙は避ける）。
+   SKILL.md is always loaded → keep each references bullet a short trigger phrase (no API enumerations).
+2. **references はオンデマンド** → 1 ファイル = 1 トピック。AI はタスクに必要なファイルだけを1つ読む設計（SKILL.md に明示）。
+   References are loaded on demand → one file per topic. The agent reads only the single file the task needs (stated in SKILL.md).
+3. **2階層構成** → 「クイック」（実装パターン・落とし穴）を入口に、「クラス別フルAPI」（完全版）は詳細確認のときだけ参照。
+   Two tiers → "quick" (patterns & pitfalls) as the entry point; "per-class full API" only when details are needed.
+4. **登録時は `--description` で短いトリガー文を指定**（自動生成は長くなりがち）。
+   Pass a short `--description` when registering (auto-generated ones tend to be long).
 
 ---
 
