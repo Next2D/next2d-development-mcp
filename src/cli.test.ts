@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { addResource, runCli } from "./cli.js";
+import { addResource, escapeMarkdown, runCli } from "./cli.js";
 
 function makeSkillFixture(): string {
     return [
@@ -151,6 +151,18 @@ describe("addResource", () => {
         expect(newRowIdx).toBeLessThan(optionsIdx);
     });
 
+    it("rejects an invalid category", () => {
+        const code = addResource({
+            source: sourcePath,
+            target: refs,
+            skill: skillPath,
+            readme: readmePath,
+            category: "bad`category"
+        });
+        expect(code).toBe(1);
+        expect(fs.existsSync(path.join(refs, "sprite.md"))).toBe(false);
+    });
+
     it("rejects an explicitly given missing SKILL.md path", () => {
         const code = addResource({
             source: sourcePath,
@@ -160,6 +172,51 @@ describe("addResource", () => {
         });
         expect(code).toBe(1);
         expect(fs.existsSync(path.join(refs, "sprite.md"))).toBe(false);
+    });
+});
+
+describe("escapeMarkdown", () => {
+    it("escapes backslashes before pipes", () => {
+        expect(escapeMarkdown("a\\b|c")).toBe("a\\\\b\\|c");
+    });
+
+    it("collapses newlines to spaces", () => {
+        expect(escapeMarkdown("line1\nline2\r\nline3")).toBe("line1 line2 line3");
+    });
+
+    it("leaves plain text unchanged", () => {
+        expect(escapeMarkdown("Sprite API")).toBe("Sprite API");
+    });
+});
+
+describe("addResource sanitization", () => {
+    it("escapes backslashes and pipes from CLI description in both files", () => {
+        const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "n2d-sanitize-"));
+        try {
+            const refs = path.join(tmp, "references");
+            const skillPath = path.join(tmp, "SKILL.md");
+            const readmePath = path.join(tmp, "README.md");
+            const sourcePath = path.join(tmp, "x.md");
+            fs.writeFileSync(sourcePath, "# X\nx\n");
+            fs.writeFileSync(skillPath, makeSkillFixture());
+            fs.writeFileSync(readmePath, makeReadmeFixture());
+
+            const code = addResource({
+                source: sourcePath,
+                target: refs,
+                skill: skillPath,
+                readme: readmePath,
+                description: "bad\\desc|with|pipes"
+            });
+
+            expect(code).toBe(0);
+            const skill = fs.readFileSync(skillPath, "utf-8");
+            const readme = fs.readFileSync(readmePath, "utf-8");
+            expect(skill).toContain("bad\\\\desc\\|with\\|pipes");
+            expect(readme).toContain("| bad\\\\desc\\|with\\|pipes |");
+        } finally {
+            fs.rmSync(tmp, { recursive: true, force: true });
+        }
     });
 });
 

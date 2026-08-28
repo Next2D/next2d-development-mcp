@@ -77,6 +77,18 @@ function asString(value: string | boolean | undefined): string | undefined {
     return typeof value === "string" ? value : undefined;
 }
 
+/**
+ * Escape characters that would break the generated markdown
+ * (table cells and bullet lines in SKILL.md / README).
+ */
+export function escapeMarkdown(text: string): string {
+    return text
+        .replace(/\\/g, "\\\\")
+        .replace(/\|/g, "\\|")
+        .replace(/[\r\n]+/g, " ")
+        .trim();
+}
+
 export async function runCli(argv: string[]): Promise<number> {
     const [command, ...rest] = argv;
 
@@ -135,10 +147,16 @@ export function addResource(opts: AddResourceOptions): number {
     }
 
     const category = opts.category ?? "specs";
+    if (!/^[a-z0-9][a-z0-9-]*$/.test(category)) {
+        console.error("Error: --category must be lowercase alphanumeric with optional hyphens (e.g. specs)");
+        return 1;
+    }
     const targetDir = path.resolve(opts.target ?? defaultTargetDir());
     const dest = path.join(targetDir, `${name}.md`);
     const content = fs.readFileSync(source, "utf-8");
-    const description = (opts.description ?? deriveDescription(content)).trim() || name;
+    // Sanitize once at the entry of the data flow: the description comes from
+    // CLI arguments (untrusted) and is embedded into markdown below.
+    const description = escapeMarkdown((opts.description ?? deriveDescription(content)).trim()) || name;
     const skillPath = path.resolve(opts.skill ?? defaultSkillPath());
     const readmePath = path.resolve(opts.readme ?? defaultReadmePath());
 
@@ -345,7 +363,7 @@ function updateReadmeFile(readmePath: string, name: string, description: string,
         .split("-")
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(" ");
-    const row = `| ${title} | \`${uri}\` | ${description.replace(/\|/g, "\\|")} |`;
+    const row = `| ${title} | \`${uri}\` | ${description} |`;
 
     // Replace an existing row with the same URI
     for (let i = startIdx; i < endIdx; i++) {
