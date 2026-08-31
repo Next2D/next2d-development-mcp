@@ -13,6 +13,7 @@ import { registerCreateLoading } from "./createLoading.js";
 import { registerAnalyzeProject } from "./analyzeProject.js";
 import { registerPlanFeature } from "./planFeature.js";
 import { registerInspectScreen } from "./inspectScreen.js";
+import { registerValidateGameIntegration } from "./validateGameIntegration.js";
 
 export { z };
 
@@ -30,4 +31,5 @@ export function registerTools(server: McpServer): void {
     registerAnalyzeProject(server);
     registerPlanFeature(server);
     registerInspectScreen(server);
+    registerValidateGameIntegration(server);
 }

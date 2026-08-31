@@ -13,6 +13,7 @@ import { registerPlanFeature } from "./planFeature.js";
 import { registerInspectScreen } from "./inspectScreen.js";
 import { registerTools } from "./index.js";
 import { validateStageJson } from "./validateArchitecture.js";
+import { validateGameIntegration } from "./validateGameIntegration.js";
 
 describe("Tool registration", () => {
     let server: McpServer;
@@ -65,10 +66,10 @@ describe("Tool registration", () => {
         expect(() => registerInspectScreen(server)).not.toThrow();
     });
 
-    it("registerTools registers all 13 tools", () => {
+    it("registerTools registers all 14 tools", () => {
         const spy = vi.spyOn(server, "registerTool");
         registerTools(server);
-        expect(spy).toHaveBeenCalledTimes(13);
+        expect(spy).toHaveBeenCalledTimes(14);
 
         const toolNames = spy.mock.calls.map((call) => call[0]);
         expect(toolNames).toContain("create_view");
@@ -84,6 +85,14 @@ describe("Tool registration", () => {
         expect(toolNames).toContain("analyze_project");
         expect(toolNames).toContain("plan_feature");
         expect(toolNames).toContain("inspect_screen");
+        expect(toolNames).toContain("validate_game_integration");
+    });
+});
+
+describe("validateGameIntegration", () => {
+    it("reports a stage-domain dimension mismatch", () => {
+        const base = "/tmp/nonexistent-next2d-game";
+        expect(validateGameIntegration(base).issues).toContain("❌ Cannot read src/config/stage.json");
     });
 });
 
