@@ -9,12 +9,12 @@ export interface GameIntegrationReport {
 }
 
 function walkTypeFiles(dir: string): string[] {
-    if (!fs.existsSync(dir)) { return []; }
+    if (!fs.existsSync(dir)) { return [] }
     const files: string[] = [];
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    for (const entry of fs.readdirSync(dir, { "withFileTypes": true })) {
         const full = path.join(dir, entry.name);
-        if (entry.isDirectory()) { files.push(...walkTypeFiles(full)); }
-        if (entry.isFile() && entry.name === "types.ts") { files.push(full); }
+        if (entry.isDirectory()) { files.push(...walkTypeFiles(full)) }
+        if (entry.isFile() && entry.name === "types.ts") { files.push(full) }
     }
     return files;
 }
@@ -35,7 +35,7 @@ export function validateGameIntegration(base: string): GameIntegrationReport {
         const content = fs.readFileSync(typePath, "utf-8");
         const width = content.match(/PLAYFIELD_WIDTH\s*=\s*(\d+)/)?.[1];
         const height = content.match(/PLAYFIELD_HEIGHT\s*=\s*(\d+)/)?.[1];
-        if (!width || !height || !stage) { continue; }
+        if (!width || !height || !stage) { continue }
         if (stage.width !== Number(width) || stage.height !== Number(height)) {
             issues.push(`❌ stage.json (${String(stage.width)}x${String(stage.height)}) does not match ${path.relative(base, typePath)} (${width}x${height})`);
         } else {
@@ -45,13 +45,13 @@ export function validateGameIntegration(base: string): GameIntegrationReport {
 
     const viewRoot = path.join(base, "src/view");
     const visit = (dir: string): void => {
-        if (!fs.existsSync(dir)) { return; }
-        for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        if (!fs.existsSync(dir)) { return }
+        for (const entry of fs.readdirSync(dir, { "withFileTypes": true })) {
             const full = path.join(dir, entry.name);
-            if (entry.isDirectory()) { visit(full); continue; }
-            if (!entry.name.endsWith("View.ts")) { continue; }
+            if (entry.isDirectory()) { visit(full); continue }
+            if (!entry.name.endsWith("View.ts")) { continue }
             const content = fs.readFileSync(full, "utf-8");
-            if (!content.includes("Event.ENTER_FRAME")) { continue; }
+            if (!content.includes("Event.ENTER_FRAME")) { continue }
             const rel = path.relative(base, full);
             const usesGlobalStage = /import\s*{[^}]*\bstage\b[^}]*}\s*from\s*["']@next2d\/display/.test(content);
             const registers = content.includes("stage.addEventListener(Event.ENTER_FRAME");
@@ -72,10 +72,10 @@ export function validateGameIntegration(base: string): GameIntegrationReport {
 
 export function registerValidateGameIntegration(server: McpServer): void {
     server.registerTool("validate_game_integration", {
-        description: "Validate Next2D game integration: stage dimensions against domain playfield constants and global stage ENTER_FRAME lifecycle.",
-        inputSchema: { projectPath: z.string().optional().default(".") }
+        "description": "Validate Next2D game integration: stage dimensions against domain playfield constants and global stage ENTER_FRAME lifecycle.",
+        "inputSchema": { "projectPath": z.string().optional().default(".") }
     }, async ({ projectPath }) => {
         const report = validateGameIntegration(path.resolve(projectPath));
-        return { content: [{ type: "text", text: [...report.issues, ...report.ok].join("\n") }] };
+        return { "content": [{ "type": "text", "text": [...report.issues, ...report.ok].join("\n") }] };
     });
 }
