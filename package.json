@@ -1,7 +1,7 @@
 {
   "name": "next2d-development-mcp",
   "displayName": "Next2D Development MCP",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "description": "MCP server for Next2D application development assistance",
   "type": "module",
   "author": "Toshiyuki Ienaga <ienaga@next2d.app>",
@@ -64,12 +64,12 @@
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.4.0",
     "@types/vscode": "^1.134.0",
-    "@typescript-eslint/eslint-plugin": "^8.68.0",
-    "@typescript-eslint/parser": "^8.68.0",
+    "@typescript-eslint/eslint-plugin": "^8.69.0",
+    "@typescript-eslint/parser": "^8.69.0",
     "@vscode/vsce": "^3.9.2",
     "eslint": "^10.9.1",
     "eslint-plugin-unused-imports": "^4.4.1",
-    "globals": "^17.11.0",
+    "globals": "^17.12.0",
     "typescript": "^6.0.3",
     "vitest": "^4.1.11"
   }
