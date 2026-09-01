@@ -8,15 +8,70 @@ export interface GameIntegrationReport {
     ok: string[];
 }
 
-function walkTypeFiles(dir: string): string[] {
+function walkTsFiles(dir: string): string[] {
     if (!fs.existsSync(dir)) { return [] }
     const files: string[] = [];
     for (const entry of fs.readdirSync(dir, { "withFileTypes": true })) {
         const full = path.join(dir, entry.name);
-        if (entry.isDirectory()) { files.push(...walkTypeFiles(full)) }
-        if (entry.isFile() && entry.name === "types.ts") { files.push(full) }
+        if (entry.isDirectory()) { files.push(...walkTsFiles(full)) }
+        if (entry.isFile() && entry.name.endsWith(".ts")) { files.push(full) }
     }
     return files;
+}
+
+function collectNumericConstants(root: string): Map<string, number> {
+    const expressions = new Map<string, string>();
+    const pattern = /export\s+const\s+([A-Z][A-Z0-9_]*)\s*=\s*([^;\n]+);/g;
+    for (const file of walkTsFiles(root)) {
+        const content = fs.readFileSync(file, "utf-8");
+        for (const match of content.matchAll(pattern)) {
+            expressions.set(match[1], match[2].trim());
+        }
+    }
+
+    const values = new Map<string, number>();
+    for (let iteration = 0; iteration <= expressions.size; iteration++) {
+        let changed = false;
+        for (const [name, expression] of expressions) {
+            if (values.has(name)) { continue }
+            const factors = expression.split("*");
+            let value = 1;
+            let resolved = true;
+            for (const factor of factors) {
+                const token = factor.replace(/[()]/g, "").trim();
+                const factorValue = /^\d+$/.test(token) ? Number(token) : values.get(token);
+                if (factorValue === undefined) {
+                    resolved = false;
+                    break;
+                }
+                value *= factorValue;
+            }
+            if (resolved && Number.isFinite(value)) {
+                values.set(name, value);
+                changed = true;
+            }
+        }
+        if (!changed) { break }
+    }
+    return values;
+}
+
+function getBoardPixels(constants: Map<string, number>): { width: number; height: number } | null {
+    const pairs = [
+        ["BOARD_PIXEL_WIDTH", "BOARD_PIXEL_HEIGHT"],
+        ["PLAYFIELD_PIXEL_WIDTH", "PLAYFIELD_PIXEL_HEIGHT"]
+    ] as const;
+    for (const [widthName, heightName] of pairs) {
+        const width = constants.get(widthName);
+        const height = constants.get(heightName);
+        if (width !== undefined && height !== undefined) { return { width, height } }
+    }
+    const columns = constants.get("BOARD_COLUMNS");
+    const rows = constants.get("BOARD_ROWS");
+    const cellSize = constants.get("CELL_SIZE");
+    return columns !== undefined && rows !== undefined && cellSize !== undefined
+        ? { "width": columns * cellSize, "height": rows * cellSize }
+        : null;
 }
 
 /** Validate game-stage dimensions and ENTER_FRAME listener ownership. */
@@ -31,15 +86,14 @@ export function validateGameIntegration(base: string): GameIntegrationReport {
         issues.push("❌ Cannot read src/config/stage.json");
     }
 
-    for (const typePath of walkTypeFiles(path.join(base, "src/model/domain"))) {
-        const content = fs.readFileSync(typePath, "utf-8");
-        const width = content.match(/PLAYFIELD_WIDTH\s*=\s*(\d+)/)?.[1];
-        const height = content.match(/PLAYFIELD_HEIGHT\s*=\s*(\d+)/)?.[1];
-        if (!width || !height || !stage) { continue }
-        if (stage.width !== Number(width) || stage.height !== Number(height)) {
-            issues.push(`❌ stage.json (${String(stage.width)}x${String(stage.height)}) does not match ${path.relative(base, typePath)} (${width}x${height})`);
+    const board = getBoardPixels(collectNumericConstants(path.join(base, "src")));
+    if (board && stage && typeof stage.width === "number" && typeof stage.height === "number") {
+        const stageSize = `${stage.width}x${stage.height}`;
+        const boardSize = `${board.width}x${board.height}`;
+        if (board.width > stage.width || board.height > stage.height) {
+            issues.push(`❌ game board (${boardSize}) exceeds stage.json (${stageSize})`);
         } else {
-            ok.push(`✅ stage.json matches ${path.relative(base, typePath)} (${width}x${height})`);
+            ok.push(`✅ game board (${boardSize}) fits stage.json (${stageSize})`);
         }
     }
 
@@ -72,7 +126,7 @@ export function validateGameIntegration(base: string): GameIntegrationReport {
 
 export function registerValidateGameIntegration(server: McpServer): void {
     server.registerTool("validate_game_integration", {
-        "description": "Validate Next2D game integration: stage dimensions against domain playfield constants and global stage ENTER_FRAME lifecycle.",
+        "description": "Validate Next2D game integration: game board fits within stage dimensions and global stage ENTER_FRAME lifecycle.",
         "inputSchema": { "projectPath": z.string().optional().default(".") }
     }, async ({ projectPath }) => {
         const report = validateGameIntegration(path.resolve(projectPath));
