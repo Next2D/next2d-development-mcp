@@ -221,15 +221,15 @@ describe("addResource sanitization", () => {
 });
 
 describe("runCli", () => {
-    it("returns 0 for help", () => {
-        expect(runCli(["help"])).resolves.toBe(0);
+    it("returns 0 for help", async () => {
+        await expect(runCli(["help"])).resolves.toBe(0);
     });
 
-    it("returns 1 for an unknown command", () => {
-        expect(runCli(["bogus"])).resolves.toBe(1);
+    it("returns 1 for an unknown command", async () => {
+        await expect(runCli(["bogus"])).resolves.toBe(1);
     });
 
-    it("returns 1 for add-resource without a file argument", () => {
-        expect(runCli(["add-resource"])).resolves.toBe(1);
+    it("returns 1 for add-resource without a file argument", async () => {
+        await expect(runCli(["add-resource"])).resolves.toBe(1);
     });
 });
