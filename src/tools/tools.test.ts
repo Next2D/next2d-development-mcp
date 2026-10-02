@@ -1,4 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import * as path from "node:path";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerCreateView } from "./createView.js";
 import { registerCreateUseCase } from "./createUseCase.js";
@@ -90,9 +93,45 @@ describe("Tool registration", () => {
 });
 
 describe("validateGameIntegration", () => {
-    it("reports a stage-domain dimension mismatch", () => {
-        const base = "/tmp/nonexistent-next2d-game";
-        expect(validateGameIntegration(base).issues).toContain("❌ Cannot read src/config/stage.json");
+    function createGameProject(stage?: { width: number; height: number }): string {
+        const base = mkdtempSync(path.join(tmpdir(), "next2d-game-"));
+        mkdirSync(path.join(base, "src/config"), { "recursive": true });
+        mkdirSync(path.join(base, "src/model/domain/tetris"), { "recursive": true });
+        mkdirSync(path.join(base, "src/ui/component/atom"), { "recursive": true });
+        if (stage) {
+            writeFileSync(path.join(base, "src/config/stage.json"), JSON.stringify({ ...stage, "fps": 60 }));
+        }
+        writeFileSync(path.join(base, "src/model/domain/tetris/types.ts"), "export const BOARD_COLUMNS = 10;\nexport const BOARD_ROWS = 20;\n");
+        writeFileSync(path.join(base, "src/ui/component/atom/Board.ts"), "export const CELL_SIZE = 24;\nexport const BOARD_PIXEL_WIDTH = BOARD_COLUMNS * CELL_SIZE;\nexport const BOARD_PIXEL_HEIGHT = BOARD_ROWS * CELL_SIZE;\n");
+        return base;
+    }
+
+    it("accepts a board that fits inside a larger stage", () => {
+        const base = createGameProject({ "width": 600, "height": 540 });
+        try {
+            expect(validateGameIntegration(base).issues).toEqual([]);
+            expect(validateGameIntegration(base).ok).toContain("✅ game board (240x480) fits stage.json (600x540)");
+        } finally {
+            rmSync(base, { "recursive": true, "force": true });
+        }
+    });
+
+    it("reports a board that exceeds the stage", () => {
+        const base = createGameProject({ "width": 200, "height": 400 });
+        try {
+            expect(validateGameIntegration(base).issues).toContain("❌ game board (240x480) exceeds stage.json (200x400)");
+        } finally {
+            rmSync(base, { "recursive": true, "force": true });
+        }
+    });
+
+    it("reports a missing stage file", () => {
+        const base = createGameProject();
+        try {
+            expect(validateGameIntegration(base).issues).toContain("❌ Cannot read src/config/stage.json");
+        } finally {
+            rmSync(base, { "recursive": true, "force": true });
+        }
     });
 });
 
